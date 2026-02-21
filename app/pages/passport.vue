@@ -17,15 +17,18 @@
           class="stamp-slot"
           :class="{ 'stamp-slot--collected': passport.hasVisited(branch.BranchCode) }"
         >
-          <div class="stamp-shape" :style="stampStyle(branch)">
-            <div class="stamp-ring" :style="{ borderRadius: getStampShape(branch.BranchCode).borderRadius }" />
-            <span class="stamp-code">{{ branch.BranchCode }}</span>
-          </div>
-          <span class="stamp-name">{{ branch.BranchName }}</span>
-          <span v-if="passport.hasVisited(branch.BranchCode)" class="stamp-date">
-            {{ visitDate(branch.BranchCode) }}
-          </span>
-          <span v-else class="stamp-unseen">not yet</span>
+          <template v-if="passport.hasVisited(branch.BranchCode)">
+            <div class="stamp-shape" :style="stampStyle(branch)">
+              <div class="stamp-ring" :style="{ borderRadius: getStampShape(branch.BranchCode).borderRadius }" />
+              <span class="stamp-code">{{ branch.BranchCode }}</span>
+            </div>
+            <span class="stamp-name">{{ branch.BranchName }}</span>
+            <span class="stamp-date">{{ visitDate(branch.BranchCode) }}</span>
+          </template>
+          <template v-else>
+            <span class="stamp-name stamp-name--unseen">{{ branch.BranchName }}</span>
+            <span class="stamp-unseen">not yet</span>
+          </template>
         </NuxtLink>
       </div>
     </div>
@@ -52,20 +55,14 @@ const byRegion = computed(() => {
 
 function stampStyle(branch) {
   const shape = getStampShape(branch.BranchCode)
-  const base = {
+  const { color, bg, border } = useStampColor(branch.WardNo)
+  return {
     borderRadius: shape.borderRadius,
     width: shape.width,
     height: shape.height,
-  }
-  if (passport.hasVisited(branch.BranchCode)) {
-    const { color, bg, border } = useStampColor(branch.WardNo)
-    return { ...base, color, background: bg, borderColor: border }
-  }
-  return {
-    ...base,
-    color: 'var(--color-border)',
-    background: 'transparent',
-    borderColor: 'var(--color-border)',
+    color,
+    background: bg,
+    borderColor: border,
   }
 }
 
@@ -102,31 +99,28 @@ function visitDate(branchCode) {
   border-bottom: none;
 }
 
-/* 2-column grid — stamps big enough to feel substantial */
+/* Shared-border grid — cells share lines rather than each having their own box.
+   Container owns the top and left edges; each cell owns its right and bottom edge. */
 .stamp-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 0;
+  border-top: 1.5px dashed var(--color-border);
+  border-left: 1.5px dashed var(--color-border);
 }
 
-/* Each slot is a dashed cell, like a pre-printed spot on a passport page */
 .stamp-slot {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 8px;
   text-decoration: none;
   color: var(--color-text);
-  padding: 18px 10px 14px;
-  border: 1.5px dashed var(--color-border);
-  border-radius: 14px;
-  transition: border-color 0.15s;
-}
-
-/* Collected slots switch to solid — the stamp has been placed */
-.stamp-slot--collected {
-  border-style: solid;
-  border-color: var(--color-border-soft);
+  padding: 20px 12px;
+  border-right: 1.5px dashed var(--color-border);
+  border-bottom: 1.5px dashed var(--color-border);
+  min-height: 150px;
 }
 
 /* Shape container — width/height/border-radius all set inline per branch */
@@ -138,9 +132,6 @@ function visitDate(branchCode) {
   justify-content: center;
   transition: transform 0.15s ease;
   flex-shrink: 0;
-}
-
-.stamp-slot--collected .stamp-shape {
   box-shadow: 0 2px 12px color-mix(in srgb, currentColor 22%, transparent);
 }
 
@@ -148,23 +139,18 @@ function visitDate(branchCode) {
   transform: scale(0.94) rotate(-2deg);
 }
 
-/* Inner dashed ring — mimics the impression line of a real rubber stamp */
+/* Inner ring — mimics the impression line of a real rubber stamp */
 .stamp-ring {
   position: absolute;
   inset: 6px;
-  border: 1.5px dashed currentColor;
-  opacity: 0.35;
-}
-
-.stamp-slot--collected .stamp-ring {
-  border-style: solid;
+  border: 1.5px solid currentColor;
   opacity: 0.22;
 }
 
 /* Library code — Roboto Condensed for that tight, official-label look */
 .stamp-code {
   font-family: var(--font-stamp);
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -181,7 +167,7 @@ function visitDate(branchCode) {
   max-width: 160px;
 }
 
-.stamp-slot:not(.stamp-slot--collected) .stamp-name {
+.stamp-name--unseen {
   color: var(--color-text-muted);
 }
 

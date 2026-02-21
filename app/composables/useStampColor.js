@@ -18,9 +18,9 @@ export function useStampColor(wardNo) {
 const STAMP_SHAPES = [
   { borderRadius: '12px',  width: '100px', height: '100px' },  // square
   { borderRadius: '24px',  width: '100px', height: '100px' },  // soft square
-  { borderRadius: '40%',   width: '100px', height: '100px' },  // superellipse
-  { borderRadius: '50%',   width: '82px',  height: '110px' },  // portrait oval
-  { borderRadius: '100px', width: '118px', height: '78px'  },  // landscape pill
+  { borderRadius: '50%',   width: '90px',  height: '90px'  },  // circle
+  { borderRadius: '50%',   width: '118px', height: '76px'  },  // landscape oval
+  { borderRadius: '100px', width: '128px', height: '70px'  },  // landscape pill
 ]
 
 export function getStampShape(branchCode) {
