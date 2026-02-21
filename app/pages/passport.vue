@@ -35,7 +35,7 @@
 
 <script setup>
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor } from '~/composables/useStampColor'
+import { useStampColor, getStampShape } from '~/composables/useStampColor'
 import { physicalBranches, REGION_ORDER, getRegion } from '~/composables/useRegion'
 
 const passport = usePassportStore()
@@ -50,23 +50,8 @@ const byRegion = computed(() => {
   return map
 })
 
-// Deterministic shape per branch — varies across codes
-const STAMP_SHAPES = [
-  '50%',                    // circle
-  '20%',                    // rounded square
-  '10px',                   // tight rounded rect
-  '50% 50% 44% 44%',        // arch / shield
-  '32%',                    // superellipse
-]
-
-function stampShape(branchCode) {
-  let h = 0
-  for (const c of branchCode) h = (h * 31 + c.charCodeAt(0)) % STAMP_SHAPES.length
-  return STAMP_SHAPES[h]
-}
-
 function stampStyle(branch) {
-  const shape = stampShape(branch.BranchCode)
+  const shape = getStampShape(branch.BranchCode)
   if (passport.hasVisited(branch.BranchCode)) {
     const { color, bg, border } = useStampColor(branch.WardNo)
     return { color, background: bg, borderColor: border, borderRadius: shape }

@@ -11,7 +11,7 @@
 
       <div class="branch-hero">
         <div class="stamp-preview" :style="stampStyles">
-          <div class="stamp-ring-preview" />
+          <div class="stamp-ring-preview" :style="{ borderRadius: stampStyles.borderRadius }" />
           <span class="stamp-code-preview">{{ branch.BranchCode }}</span>
         </div>
         <div class="branch-title-area">
@@ -171,7 +171,7 @@
 <script setup>
 import branchData from '#data/tpl-branch-general-information-2023.json'
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor } from '~/composables/useStampColor'
+import { useStampColor, getStampShape } from '~/composables/useStampColor'
 import { getRegion } from '~/composables/useRegion'
 
 const route   = useRoute()
@@ -182,7 +182,8 @@ const branch = computed(() => branchData.find(b => b.BranchCode === route.params
 const stampStyles = computed(() => {
   if (!branch.value) return {}
   const { color, bg, border } = useStampColor(branch.value.WardNo)
-  return { color, background: bg, borderColor: border }
+  const borderRadius = getStampShape(branch.value.BranchCode)
+  return { color, background: bg, borderColor: border, borderRadius }
 })
 
 const branchRegion   = computed(() => getRegion(branch.value?.WardNo) ?? '')
@@ -297,20 +298,20 @@ function formatVisitDate(iso) {
   width: 72px;
   height: 72px;
   flex-shrink: 0;
-  border-radius: 50%;
   border: 2.5px solid currentColor;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* border-radius set by stampStyles inline */
 }
 
 .stamp-ring-preview {
   position: absolute;
   inset: 5px;
-  border-radius: 50%;
   border: 1.5px solid currentColor;
   opacity: 0.35;
+  /* border-radius set inline to match outer shape */
 }
 
 .stamp-code-preview {

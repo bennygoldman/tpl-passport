@@ -72,7 +72,7 @@
             <div class="visit-stamp-dot" :style="{ background: stampColor(visit.branchCode).color }" />
             <div class="visit-info">
               <span class="visit-name">{{ branchMap[visit.branchCode] ?? visit.branchCode }}</span>
-              <span class="visit-ward">{{ wardMap[visit.branchCode] }}</span>
+              <span class="visit-ward">{{ regionMap[visit.branchCode] }}</span>
             </div>
             <span class="visit-date">{{ formatDate(visit.timestamp) }}</span>
           </NuxtLink>
@@ -94,14 +94,14 @@
 <script setup>
 import { usePassportStore } from '~/stores/passport'
 import { useStampColor } from '~/composables/useStampColor'
-import { physicalBranches } from '~/composables/useRegion'
+import { physicalBranches, getRegion } from '~/composables/useRegion'
 
 const passport = usePassportStore()
 
 const totalBranches = physicalBranches.length
-const branchMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.BranchName]))
-const wardMap   = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.WardName]))
-const wardNoMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.WardNo]))
+const branchMap  = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.BranchName]))
+const regionMap  = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, getRegion(b.WardNo)]))
+const wardNoMap  = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.WardNo]))
 
 const progressPct = computed(() =>
   Math.round((passport.visitCount / totalBranches) * 100)
