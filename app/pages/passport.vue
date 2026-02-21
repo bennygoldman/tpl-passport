@@ -17,15 +17,15 @@
           class="stamp-slot"
           :class="{ 'stamp-slot--collected': passport.hasVisited(branch.BranchCode) }"
         >
-          <div class="stamp-circle" :style="stampStyle(branch)">
-            <div class="stamp-ring" />
+          <div class="stamp-shape" :style="stampStyle(branch)">
+            <div class="stamp-ring" :style="{ borderRadius: stampShape(branch) }" />
             <span class="stamp-code">{{ branch.BranchCode }}</span>
           </div>
           <span class="stamp-name">{{ branch.BranchName }}</span>
           <span v-if="passport.hasVisited(branch.BranchCode)" class="stamp-date">
             {{ visitDate(branch.BranchCode) }}
           </span>
-          <span v-else class="stamp-unseen">not yet visited</span>
+          <span v-else class="stamp-unseen">not yet</span>
         </NuxtLink>
       </div>
     </div>
@@ -50,11 +50,33 @@ const byRegion = computed(() => {
   return map
 })
 
+// Deterministic shape per branch — varies across codes
+const STAMP_SHAPES = [
+  '50%',                    // circle
+  '20%',                    // rounded square
+  '10px',                   // tight rounded rect
+  '50% 50% 44% 44%',        // arch / shield
+  '32%',                    // superellipse
+]
+
+function stampShape(branchCode) {
+  let h = 0
+  for (const c of branchCode) h = (h * 31 + c.charCodeAt(0)) % STAMP_SHAPES.length
+  return STAMP_SHAPES[h]
+}
+
 function stampStyle(branch) {
-  const collected = passport.hasVisited(branch.BranchCode)
-  const { color, bg, border } = useStampColor(branch.WardNo)
-  if (collected) return { color, background: bg, borderColor: border }
-  return { color: '#bbb4a6', background: 'transparent', borderColor: '#d4ccc0' }
+  const shape = stampShape(branch.BranchCode)
+  if (passport.hasVisited(branch.BranchCode)) {
+    const { color, bg, border } = useStampColor(branch.WardNo)
+    return { color, background: bg, borderColor: border, borderRadius: shape }
+  }
+  return {
+    color: 'var(--color-border)',
+    background: 'transparent',
+    borderColor: 'var(--color-border)',
+    borderRadius: shape,
+  }
 }
 
 function visitDate(branchCode) {
@@ -76,8 +98,18 @@ function visitDate(branchCode) {
   color: var(--color-text-muted);
 }
 
+/* Dashed separators between regions — passport page feel */
 .region-section {
-  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1.5px dashed var(--color-border);
+}
+
+.region-section + .region-section {
+  padding-top: 20px;
+}
+
+.region-section:last-child {
+  border-bottom: none;
 }
 
 .stamp-grid {
@@ -95,10 +127,10 @@ function visitDate(branchCode) {
   color: var(--color-text);
 }
 
-.stamp-circle {
+/* Shape container — all shapes live within this fixed bounding box */
+.stamp-shape {
   width: 76px;
   height: 76px;
-  border-radius: 50%;
   border: 2.5px solid currentColor;
   position: relative;
   display: flex;
@@ -107,18 +139,17 @@ function visitDate(branchCode) {
   transition: transform 0.15s ease;
 }
 
-.stamp-slot--collected .stamp-circle {
+.stamp-slot--collected .stamp-shape {
   box-shadow: 0 2px 10px color-mix(in srgb, currentColor 25%, transparent);
 }
 
-.stamp-slot--collected .stamp-circle:active {
-  transform: scale(0.94) rotate(-3deg);
+.stamp-slot--collected .stamp-shape:active {
+  transform: scale(0.94) rotate(-2deg);
 }
 
 .stamp-ring {
   position: absolute;
   inset: 5px;
-  border-radius: 50%;
   border: 1.5px dashed currentColor;
   opacity: 0.4;
 }

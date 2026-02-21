@@ -14,21 +14,27 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'TPL: Passport',
+      title: 'TPL Passport',
+      meta: [
+        // PWA + iOS installability
+        { name: 'theme-color', content: '#001c71', media: '(prefers-color-scheme: light)' },
+        { name: 'theme-color', content: '#0e1236', media: '(prefers-color-scheme: dark)' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-title', content: 'TPL Passport' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+      ],
       link: [
-        {
-          rel: 'preconnect',
-          href: 'https://fonts.googleapis.com',
-        },
-        {
-          rel: 'preconnect',
-          href: 'https://fonts.gstatic.com',
-          crossorigin: '',
-        },
+        // Fonts
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Outfit:wght@400;500;600;700&display=swap',
         },
+        // PWA
+        { rel: 'manifest', href: '/manifest.json' },
+        { rel: 'icon', type: 'image/png', href: '/tpl-logo.png' },
+        { rel: 'apple-touch-icon', href: '/tpl-logo.png' },
       ],
     },
   },
@@ -37,4 +43,10 @@ export default defineNuxtConfig({
   alias: {
     '#data': fileURLToPath(new URL('./data', import.meta.url)),
   },
+
+  vite: {
+    server: {
+      allowedHosts: ['nonprotesting-rochel-carpingly.ngrok-free.dev']
+    }
+  }
 })
