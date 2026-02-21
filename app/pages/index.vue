@@ -59,6 +59,44 @@
       </div>
     </div>
 
+    <!-- Achievements -->
+    <section class="achievements-section">
+      <div class="recent-header">
+        <h2>Achievements</h2>
+      </div>
+
+      <!-- Earned badges -->
+      <div v-if="earnedBadges.length" class="badges-scroll">
+        <div
+          v-for="badge in earnedBadges"
+          :key="badge.id"
+          class="badge-chip"
+          :title="badge.desc"
+        >
+          <span class="badge-emoji">{{ badge.emoji }}</span>
+          <span class="badge-name">{{ badge.title }}</span>
+        </div>
+      </div>
+
+      <!-- Next badge goal -->
+      <div v-if="nextBadge" class="next-badge card">
+        <div class="next-badge__header">
+          <span class="next-badge__eyebrow">Next goal</span>
+          <span class="next-badge__fraction">{{ passport.visitCount }} / {{ nextBadge.threshold }}</span>
+        </div>
+        <div class="next-badge__body">
+          <span class="next-badge__emoji">{{ nextBadge.emoji }}</span>
+          <div class="next-badge__text">
+            <p class="next-badge__title">{{ nextBadge.title }}</p>
+            <p class="next-badge__desc">{{ nextBadge.desc }}</p>
+          </div>
+        </div>
+        <div class="next-badge__track">
+          <div class="next-badge__fill" :style="{ width: nextBadgePct + '%' }" />
+        </div>
+      </div>
+    </section>
+
     <!-- Recent visits -->
     <section class="recent-section">
       <div class="recent-header">
@@ -106,6 +144,32 @@ const wardNoMap  = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b
 const progressPct = computed(() =>
   Math.round((passport.visitCount / totalBranches) * 100)
 )
+
+// Achievements
+const ACHIEVEMENTS = [
+  { id: 'first',       emoji: '🌱', title: 'First Stamp',    desc: 'Check in at your first branch',    threshold: 1  },
+  { id: 'local',       emoji: '🏘️',  title: 'Local',          desc: 'Visit 5 branches',                 threshold: 5  },
+  { id: 'explorer',    emoji: '🗺️',  title: 'Explorer',       desc: 'Visit 10 branches',                threshold: 10 },
+  { id: 'adventurer',  emoji: '🧭', title: 'Adventurer',     desc: 'Visit 25 branches',                threshold: 25 },
+  { id: 'halfway',     emoji: '✨', title: 'Half Passport',  desc: 'Visit 50 branches',                threshold: 50 },
+  { id: 'nearly',      emoji: '🚀', title: 'Almost There',   desc: 'Visit 75 branches',                threshold: 75 },
+  { id: 'complete',    emoji: '🏆', title: 'Full Passport',  desc: `Visit all ${totalBranches} branches`, threshold: totalBranches },
+]
+
+const earnedBadges = computed(() =>
+  ACHIEVEMENTS.filter(a => passport.visitCount >= a.threshold)
+)
+
+const nextBadge = computed(() =>
+  ACHIEVEMENTS.find(a => passport.visitCount < a.threshold) ?? null
+)
+
+const nextBadgePct = computed(() => {
+  if (!nextBadge.value) return 100
+  const prev = earnedBadges.value.at(-1)?.threshold ?? 0
+  const range = nextBadge.value.threshold - prev
+  return Math.round(((passport.visitCount - prev) / range) * 100)
+})
 
 const recentVisits = computed(() => passport.checkIns.slice(0, 5))
 
@@ -299,6 +363,108 @@ function formatDate(iso) {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+/* Achievements */
+.achievements-section {
+  margin-bottom: 24px;
+}
+
+.badges-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  scrollbar-width: none;
+}
+.badges-scroll::-webkit-scrollbar { display: none; }
+
+.badge-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  min-width: 64px;
+}
+
+.badge-emoji { font-size: 1.4rem; line-height: 1; }
+
+.badge-name {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Next badge */
+.next-badge {
+  padding: 14px 16px;
+}
+
+.next-badge__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.next-badge__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.next-badge__fraction {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tpl-blue);
+}
+
+.next-badge__body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.next-badge__emoji { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+
+.next-badge__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.next-badge__desc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+.next-badge__track {
+  height: 5px;
+  background: var(--color-border-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.next-badge__fill {
+  height: 100%;
+  background: var(--tpl-blue);
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-width: 4px;
 }
 
 /* Recent visits */
