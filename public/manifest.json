@@ -9,13 +9,13 @@
   "theme_color": "#001c71",
   "icons": [
     {
-      "src": "/tpl-logo.png",
+      "src": "/tpl-meta-card.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/tpl-logo.png",
+      "src": "/tpl-meta-card.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "maskable"

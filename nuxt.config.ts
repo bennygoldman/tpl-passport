@@ -33,8 +33,8 @@ export default defineNuxtConfig({
         },
         // PWA
         { rel: 'manifest', href: '/manifest.json' },
-        { rel: 'icon', type: 'image/png', href: '/tpl-logo.png' },
-        { rel: 'apple-touch-icon', href: '/tpl-logo.png' },
+        { rel: 'icon', type: 'image/png', href: '/tpl-meta-card.png' },
+        { rel: 'apple-touch-icon', href: '/tpl-meta-card.png' },
       ],
     },
   },
