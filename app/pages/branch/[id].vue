@@ -182,7 +182,7 @@ const branch = computed(() => branchData.find(b => b.BranchCode === route.params
 const stampStyles = computed(() => {
   if (!branch.value) return {}
   const { color, bg, border } = useStampColor(branch.value.WardNo)
-  const borderRadius = getStampShape(branch.value.BranchCode)
+  const { borderRadius } = getStampShape(branch.value.BranchCode)
   return { color, background: bg, borderColor: border, borderRadius }
 })
 
@@ -314,10 +314,10 @@ function formatVisitDate(iso) {
 }
 
 .stamp-code-preview {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-family: var(--font-stamp);
+  font-size: 1rem;
   font-weight: 700;
-  font-optical-sizing: auto;
+  letter-spacing: 0.06em;
 }
 
 .branch-title-area h1  { font-size: 1.35rem; line-height: 1.2; margin-bottom: 3px; }

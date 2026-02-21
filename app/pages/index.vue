@@ -35,11 +35,10 @@
         </div>
         <p class="passport-card__sub">
           <template v-if="passport.visitCount === 0">Visit your first branch to start collecting stamps</template>
-          <template v-else-if="passport.visitCount === totalBranches">🎉 You've completed your passport!</template>
+          <template v-else-if="passport.visitCount === totalBranches">You've completed your passport!</template>
           <template v-else>{{ totalBranches - passport.visitCount }} branches left to collect</template>
         </p>
       </div>
-      <!-- Decorative watermark -->
       <img src="/tpl-meta.png" class="passport-card__watermark" aria-hidden="true" />
     </section>
 
@@ -65,15 +64,17 @@
         <h2>Achievements</h2>
       </div>
 
-      <!-- Earned badges -->
-      <div v-if="earnedBadges.length" class="badges-scroll">
+      <!-- Earned badges — octagon/badge shape, 3-column grid -->
+      <div v-if="earnedBadges.length" class="badges-grid">
         <div
           v-for="badge in earnedBadges"
           :key="badge.id"
-          class="badge-chip"
+          class="badge-item"
           :title="badge.desc"
         >
-          <span class="badge-emoji">{{ badge.emoji }}</span>
+          <div class="badge-hex">
+            <span class="badge-milestone">{{ badge.threshold === 1 ? '1st' : badge.threshold }}</span>
+          </div>
           <span class="badge-name">{{ badge.title }}</span>
         </div>
       </div>
@@ -85,7 +86,9 @@
           <span class="next-badge__fraction">{{ passport.visitCount }} / {{ nextBadge.threshold }}</span>
         </div>
         <div class="next-badge__body">
-          <span class="next-badge__emoji">{{ nextBadge.emoji }}</span>
+          <div class="badge-hex badge-hex--locked">
+            <span class="badge-milestone">{{ nextBadge.threshold === 1 ? '1st' : nextBadge.threshold }}</span>
+          </div>
           <div class="next-badge__text">
             <p class="next-badge__title">{{ nextBadge.title }}</p>
             <p class="next-badge__desc">{{ nextBadge.desc }}</p>
@@ -97,25 +100,38 @@
       </div>
     </section>
 
-    <!-- Recent visits -->
+    <!-- Recent visit — most recent day, aggregated if multiple -->
     <section class="recent-section">
       <div class="recent-header">
-        <h2>Recent visits</h2>
-        <NuxtLink to="/history" class="view-all">View all</NuxtLink>
+        <h2>Recent visit</h2>
+        <NuxtLink to="/history" class="view-all">History →</NuxtLink>
       </div>
 
-      <ul v-if="recentVisits.length" class="visit-list">
-        <li v-for="visit in recentVisits" :key="visit.timestamp">
-          <NuxtLink :to="`/branch/${visit.branchCode}`" class="visit-row">
-            <div class="visit-stamp-dot" :style="{ background: stampColor(visit.branchCode).color }" />
-            <div class="visit-info">
-              <span class="visit-name">{{ branchMap[visit.branchCode] ?? visit.branchCode }}</span>
-              <span class="visit-ward">{{ regionMap[visit.branchCode] }}</span>
-            </div>
-            <span class="visit-date">{{ formatDate(visit.timestamp) }}</span>
-          </NuxtLink>
-        </li>
-      </ul>
+      <template v-if="recentActivity">
+        <!-- Single branch visit -->
+        <NuxtLink
+          v-if="recentActivity.count === 1"
+          :to="`/branch/${recentActivity.branches[0].branchCode}`"
+          class="visit-row"
+        >
+          <div class="visit-stamp-dot" :style="{ background: stampColor(recentActivity.branches[0].branchCode).color }" />
+          <div class="visit-info">
+            <span class="visit-name">{{ branchMap[recentActivity.branches[0].branchCode] ?? recentActivity.branches[0].branchCode }}</span>
+            <span class="visit-ward">{{ regionMap[recentActivity.branches[0].branchCode] }}</span>
+          </div>
+          <span class="visit-date">{{ formatDate(recentActivity.timestamp) }}</span>
+        </NuxtLink>
+
+        <!-- Multiple branches same day -->
+        <NuxtLink v-else to="/history" class="visit-row">
+          <div class="visit-stamp-dot visit-stamp-dot--multi" />
+          <div class="visit-info">
+            <span class="visit-name">{{ recentActivity.count }} branches visited</span>
+            <span class="visit-ward">{{ formatDate(recentActivity.timestamp) }}</span>
+          </div>
+          <span class="visit-date">View all →</span>
+        </NuxtLink>
+      </template>
 
       <div v-else class="empty-card">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -145,15 +161,15 @@ const progressPct = computed(() =>
   Math.round((passport.visitCount / totalBranches) * 100)
 )
 
-// Achievements
+// Achievements — milestone numbers instead of emoji for a more considered look
 const ACHIEVEMENTS = [
-  { id: 'first',       emoji: '🌱', title: 'First Stamp',    desc: 'Check in at your first branch',    threshold: 1  },
-  { id: 'local',       emoji: '🏘️',  title: 'Local',          desc: 'Visit 5 branches',                 threshold: 5  },
-  { id: 'explorer',    emoji: '🗺️',  title: 'Explorer',       desc: 'Visit 10 branches',                threshold: 10 },
-  { id: 'adventurer',  emoji: '🧭', title: 'Adventurer',     desc: 'Visit 25 branches',                threshold: 25 },
-  { id: 'halfway',     emoji: '✨', title: 'Half Passport',  desc: 'Visit 50 branches',                threshold: 50 },
-  { id: 'nearly',      emoji: '🚀', title: 'Almost There',   desc: 'Visit 75 branches',                threshold: 75 },
-  { id: 'complete',    emoji: '🏆', title: 'Full Passport',  desc: `Visit all ${totalBranches} branches`, threshold: totalBranches },
+  { id: 'first',      title: 'First Stamp',   desc: 'Check in at your first branch',    threshold: 1  },
+  { id: 'local',      title: 'Local',          desc: 'Visit 5 branches',                 threshold: 5  },
+  { id: 'explorer',   title: 'Explorer',       desc: 'Visit 10 branches',                threshold: 10 },
+  { id: 'adventurer', title: 'Adventurer',     desc: 'Visit 25 branches',                threshold: 25 },
+  { id: 'halfway',    title: 'Half Passport',  desc: 'Visit 50 branches',                threshold: 50 },
+  { id: 'nearly',     title: 'Almost There',   desc: 'Visit 75 branches',                threshold: 75 },
+  { id: 'complete',   title: 'Full Passport',  desc: `Visit all ${totalBranches} branches`, threshold: totalBranches },
 ]
 
 const earnedBadges = computed(() =>
@@ -171,7 +187,18 @@ const nextBadgePct = computed(() => {
   return Math.round(((passport.visitCount - prev) / range) * 100)
 })
 
-const recentVisits = computed(() => passport.checkIns.slice(0, 5))
+// Group most recent day's check-ins — show count if multiple on same day
+const recentActivity = computed(() => {
+  if (!passport.checkIns.length) return null
+  const first = passport.checkIns[0]
+  const firstDate = new Date(first.timestamp).toDateString()
+  const group = passport.checkIns.filter(c => new Date(c.timestamp).toDateString() === firstDate)
+  return {
+    count: group.length,
+    branches: group,
+    timestamp: first.timestamp,
+  }
+})
 
 function stampColor(branchCode) {
   return useStampColor(wardNoMap[branchCode] ?? 1)
@@ -210,7 +237,7 @@ function formatDate(iso) {
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--tpl-navy);
+  color: var(--color-brand-text);
   letter-spacing: -0.02em;
   font-optical-sizing: auto;
 }
@@ -243,6 +270,7 @@ function formatDate(iso) {
   margin-bottom: 14px;
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .passport-card__inner { position: relative; z-index: 1; }
@@ -370,42 +398,60 @@ function formatDate(iso) {
   margin-bottom: 24px;
 }
 
-.badges-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  scrollbar-width: none;
+/* 3-column grid of hexagonal badge shapes */
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 8px;
+  margin-bottom: 14px;
 }
-.badges-scroll::-webkit-scrollbar { display: none; }
 
-.badge-chip {
+.badge-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  flex-shrink: 0;
-  min-width: 64px;
+  gap: 7px;
 }
 
-.badge-emoji { font-size: 1.4rem; line-height: 1; }
+/* Octagon badge — clip-path gives the official stamp/medal shape */
+.badge-hex {
+  width: 72px;
+  height: 72px;
+  background: var(--tpl-navy);
+  clip-path: polygon(29% 0%, 71% 0%, 100% 29%, 100% 71%, 71% 100%, 29% 100%, 0% 71%, 0% 29%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.badge-hex--locked {
+  background: var(--color-border);
+}
+
+.badge-milestone {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  font-optical-sizing: auto;
+  line-height: 1;
+}
+
+.badge-hex--locked .badge-milestone {
+  color: var(--color-text-muted);
+}
 
 .badge-name {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
   text-align: center;
-  white-space: nowrap;
+  color: var(--color-text-muted);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
 }
 
-/* Next badge */
+/* Next badge goal */
 .next-badge {
   padding: 14px 16px;
 }
@@ -414,7 +460,7 @@ function formatDate(iso) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .next-badge__eyebrow {
@@ -434,11 +480,11 @@ function formatDate(iso) {
 .next-badge__body {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 12px;
 }
 
-.next-badge__emoji { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.next-badge__text { flex: 1; }
 
 .next-badge__title {
   font-size: 0.95rem;
@@ -467,8 +513,8 @@ function formatDate(iso) {
   min-width: 4px;
 }
 
-/* Recent visits */
-.recent-section { }
+/* Recent visit — single compact row */
+.recent-section { margin-bottom: 24px; }
 
 .recent-header {
   display: flex;
@@ -487,18 +533,11 @@ function formatDate(iso) {
   color: var(--tpl-blue);
 }
 
-.visit-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .visit-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius);
@@ -514,12 +553,16 @@ function formatDate(iso) {
   flex-shrink: 0;
 }
 
+.visit-stamp-dot--multi {
+  background: var(--tpl-blue);
+}
+
 .visit-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .visit-name {
@@ -533,9 +576,6 @@ function formatDate(iso) {
 .visit-ward {
   font-size: 0.73rem;
   color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .visit-date {

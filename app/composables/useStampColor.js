@@ -13,13 +13,14 @@ export function useStampColor(wardNo) {
 }
 
 // Deterministic stamp shape per branch — hashed from BranchCode.
+// Returns { borderRadius, width, height } so oval/pill shapes are authentically proportioned.
 // Used on passport page, branch detail header, and check-in page.
 const STAMP_SHAPES = [
-  '50%',                 // circle
-  '20%',                 // rounded square
-  '10px',                // tight rounded rect
-  '50% 50% 44% 44%',    // arch / shield
-  '32%',                 // superellipse
+  { borderRadius: '12px',  width: '100px', height: '100px' },  // square
+  { borderRadius: '24px',  width: '100px', height: '100px' },  // soft square
+  { borderRadius: '40%',   width: '100px', height: '100px' },  // superellipse
+  { borderRadius: '50%',   width: '82px',  height: '110px' },  // portrait oval
+  { borderRadius: '100px', width: '118px', height: '78px'  },  // landscape pill
 ]
 
 export function getStampShape(branchCode) {

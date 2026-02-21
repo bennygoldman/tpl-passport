@@ -186,7 +186,7 @@ const alreadyVisitedToday = computed(() =>
 const previewStampStyle = computed(() => {
   if (!selectedBranch.value) return {}
   const { color, bg, border } = useStampColor(selectedBranch.value.WardNo)
-  return { color, background: bg, borderColor: border, borderRadius: getStampShape(selectedBranch.value.BranchCode) }
+  return { color, background: bg, borderColor: border, borderRadius: getStampShape(selectedBranch.value.BranchCode).borderRadius }
 })
 
 // Note + photo
@@ -221,7 +221,7 @@ const successStampStyle = computed(() => {
   const branch = physicalBranches.find(b => b.BranchCode === result.value.branchCode)
   if (!branch) return {}
   const { color, bg, border } = useStampColor(branch.WardNo)
-  return { color, background: bg, borderColor: border, borderRadius: getStampShape(branch.BranchCode) }
+  return { color, background: bg, borderColor: border, borderRadius: getStampShape(branch.BranchCode).borderRadius }
 })
 
 function reset() {
@@ -453,10 +453,11 @@ onUnmounted(closeScanner)
 }
 
 .stamp-lg-code {
-  font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-family: var(--font-stamp);
+  font-size: 1.3rem;
   font-weight: 700;
-  font-optical-sizing: auto;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   position: relative;
   z-index: 1;
 }
