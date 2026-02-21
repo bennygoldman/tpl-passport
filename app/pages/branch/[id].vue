@@ -250,9 +250,8 @@ const services = computed(() => {
 
 // ── Events (hardcoded for MVP — replace with API when ready) ───
 const BRANCH_EVENTS = [
-  { title: 'Book Club: Winter Reads',   date: '2026-02-25', time: '6:00pm', age: 'Adults' },
-  { title: 'Lego Building Challenge',   date: '2026-03-01', time: '2:00pm', age: 'Kids 6–12' },
-  { title: 'Teen Drop-In Hangout',      date: '2026-03-08', time: '3:30pm', age: 'Teens' },
+  { title: 'Book Club: Winter Reads', date: '2026-02-25', time: '6:00pm',  age: 'Adults'     },
+  { title: 'Lego Building Challenge', date: '2026-03-01', time: '2:00pm',  age: 'Kids 6–12'  },
 ]
 
 function formatEventMonth(date) {

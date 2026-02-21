@@ -2,7 +2,7 @@
   <main class="page-content">
     <header class="page-header">
       <h1>Explore</h1>
-      <p class="sub">{{ filteredBranches.length }} branches across Toronto</p>
+      <p class="sub">{{ filteredBranches.length }} {{ onlyUnvisited ? 'unvisited' : '' }} branches{{ onlyUnvisited ? ' left to go' : ' across Toronto' }}</p>
     </header>
 
     <div class="controls">
@@ -26,6 +26,11 @@
           :class="{ 'sort-tab--active': sort === opt.value }"
           @click="sort = opt.value"
         >{{ opt.label }}</button>
+        <button
+          class="sort-tab sort-tab--pill"
+          :class="{ 'sort-tab--active': onlyUnvisited }"
+          @click="onlyUnvisited = !onlyUnvisited"
+        >Not yet</button>
       </div>
     </div>
 
@@ -86,8 +91,9 @@ import { physicalBranches, REGION_ORDER, getRegion } from '~/composables/useRegi
 
 const passport = usePassportStore()
 
-const query = ref('')
-const sort  = ref('alpha')
+const query        = ref('')
+const sort         = ref('alpha')
+const onlyUnvisited = ref(false)
 
 const sortOptions = [
   { value: 'alpha',  label: 'A–Z' },
@@ -103,6 +109,9 @@ const filteredBranches = computed(() => {
       b.NBHDName?.toLowerCase().includes(q) ||
       b.Address?.toLowerCase().includes(q)
     )
+  }
+  if (onlyUnvisited.value) {
+    list = list.filter(b => !passport.hasVisited(b.BranchCode))
   }
   if (sort.value === 'alpha') {
     return [...list].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
@@ -174,7 +183,7 @@ function dotStyle(branch) {
   padding: 11px 14px 11px 38px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 0.9rem;
+  font-size: 1rem; /* 16px minimum prevents iOS Safari auto-zoom on focus */
   font-family: var(--font-body);
   background: var(--color-surface);
   color: var(--color-text);

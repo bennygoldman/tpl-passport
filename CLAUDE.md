@@ -25,27 +25,34 @@ Prefer fewer files, fewer libraries, and less abstraction. When there are multip
 
 ## Current Implementation State
 
-MVP is scaffolded and functional. Key implementation notes:
+MVP is fully functional and deployed. Key implementation notes:
 
-- **SPA mode** (`ssr: false` in nuxt.config.ts) — state is localStorage-first, no backend yet
+- **SPA mode** (`ssr: false` in nuxt.config.ts) — state is localStorage-first via Pinia; no backend yet
 - **`#data` alias** — in nuxt.config.ts, points to `./data/` root folder so pages can `import from '#data/...'`
-- **`physicalBranches`** — exported from `app/composables/useRegion.js`; filters out virtual/service branches (those without `WardNo`)
+- **`physicalBranches`** — exported from `app/composables/useRegion.js`; filters to 100 branches with a valid `WardNo`
 - **6-region grouping** — `useRegion.js` maps Toronto's 25 wards to 6 geographic regions: Etobicoke, West End Toronto, Downtown Toronto, East End Toronto, Don Valley, Scarborough
-- **Events API** — CKAN resource ID `c73bbe54-3a48-4ada-8eef-a1a2864021e4`; filter by `library` field (matches `BranchName`); fetched per-branch in `branch/[id].vue`
+- **Events** — hardcoded for MVP (2 per branch in `branch/[id].vue`); real data would come from the CKAN programs API
 - **Fonts** — Fraunces (display) + Outfit (body) via Google Fonts in nuxt.config.ts head
-- **Stamp colors** — `useStampColor(wardNo)` returns `{ color, bg, border }` based on hue rotation across wards
-- **Public images** — `tpl-meta.png` is the square meta card image (used in header/watermark); `tpl-logo.png` is the wordmark
+- **Stamp colors** — `useStampColor(wardNo)` in `app/composables/useStampColor.js`; `getStampShape(branchCode)` deterministically picks one of 5 border-radius shapes
+- **Public images** — `tpl-meta.png` (used in header/watermark); `tpl-meta-card.png` (PWA icon, favicon, apple-touch-icon); `tpl-logo.png` (wordmark, unused currently)
+- **Dark mode** — CSS vars duplicated in `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` and `[data-theme="dark"]`; `app.vue` watches `passport.profile.theme` to apply the attribute
+- **PWA** — `public/manifest.json` + meta tags in nuxt.config.ts; `vercel.json` handles SPA routing fallback
 
-## App Structure (Planned)
+## App Structure (Implemented)
 
-| Tab / View | Description |
+Bottom nav: **Home → Explore → Check In (centre orb) → Passport → History**
+Settings accessible via profile button on Home.
+
+| Route | Description |
 |---|---|
-| Dashboard | Progress toward passport completion, recent visits |
-| Explore | All branches with search, visited indicator |
-| Branch Detail | Branch info, services, hours (today's hours as default), check-in button |
-| Passport | Stamps collected, paginated/organized by neighbourhood or ward |
-| History | Full check-in log |
-| Settings | Home branch, avatar, favorite book |
+| `/` | Dashboard — passport hero card, stats, achievements, recent visits |
+| `/explore` | All 100 branches; A–Z or by region; "Not yet" unvisited filter |
+| `/check-in` | Dedicated check-in page; `?branch=CODE` pre-fills from QR scan |
+| `/branch/[id]` | Branch detail — stamp preview, check-in sheet, events, info, services, challenges |
+| `/passport` | Stamp grid organised by region with dashed separators |
+| `/history` | Check-in log grouped by recency; streak + stats summary |
+| `/settings` | Passport bio-page profile card with MRZ; theme toggle; demo mode |
+| `/qr-print` | Searchable grid of printable QR codes for all branches |
 
 **User types to consider**: Parent, Child, Teen — may have different experiences (at minimum, consider this in design).
 

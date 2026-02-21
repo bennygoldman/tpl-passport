@@ -5,6 +5,24 @@
       <p class="sub" v-if="passport.checkIns.length">{{ passport.checkIns.length }} check-in{{ passport.checkIns.length !== 1 ? 's' : '' }}</p>
     </header>
 
+    <!-- Stats summary -->
+    <div v-if="passport.checkIns.length" class="stats-strip">
+      <div class="stat-item">
+        <span class="stat-num">{{ passport.checkIns.length }}</span>
+        <span class="stat-lbl">Total visits</span>
+      </div>
+      <div class="stat-divider" />
+      <div class="stat-item">
+        <span class="stat-num">{{ passport.visitCount }}</span>
+        <span class="stat-lbl">Branches</span>
+      </div>
+      <div class="stat-divider" />
+      <div class="stat-item">
+        <span class="stat-num">{{ weekStreak }}</span>
+        <span class="stat-lbl">Week streak</span>
+      </div>
+    </div>
+
     <template v-if="passport.checkIns.length">
       <section v-for="[label, items] in grouped" :key="label" class="history-group">
         <p class="section-label">{{ label }}</p>
@@ -65,6 +83,36 @@ const grouped = computed(() => {
   return Object.entries(buckets).filter(([, items]) => items.length > 0)
 })
 
+// Week streak — consecutive calendar weeks (Mon–Sun) with at least one visit.
+// If the most recent visit week isn't this week or last week, streak resets to 0.
+const weekStreak = computed(() => {
+  if (!passport.checkIns.length) return 0
+
+  // Monday of the week containing a given date
+  function weekStart(date) {
+    const d = new Date(date)
+    const day = d.getDay() || 7   // treat Sunday as 7
+    d.setDate(d.getDate() - (day - 1))
+    d.setHours(0, 0, 0, 0)
+    return d.getTime()
+  }
+
+  const weeksWithVisit = new Set(passport.checkIns.map(c => weekStart(new Date(c.timestamp))))
+  const thisWeek = weekStart(new Date())
+  const lastWeek = thisWeek - 7 * 86400000
+
+  // Streak only counts if the user visited this week or last week
+  if (!weeksWithVisit.has(thisWeek) && !weeksWithVisit.has(lastWeek)) return 0
+
+  let streak = 0
+  let cursor = weeksWithVisit.has(thisWeek) ? thisWeek : lastWeek
+  while (weeksWithVisit.has(cursor)) {
+    streak++
+    cursor -= 7 * 86400000
+  }
+  return streak
+})
+
 function stampColor(branchCode) {
   return useStampColor(wardNoMap[branchCode] ?? 1)
 }
@@ -87,6 +135,51 @@ function formatTime(iso) {
 .sub {
   font-size: 0.82rem;
   color: var(--color-text-muted);
+}
+
+/* Stats strip */
+.stats-strip {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.stat-item {
+  flex: 1;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--tpl-blue);
+  line-height: 1;
+  font-optical-sizing: auto;
+}
+
+.stat-lbl {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.stat-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--color-border-soft);
+  flex-shrink: 0;
 }
 
 .history-group {
