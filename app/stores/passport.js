@@ -7,7 +7,8 @@ export const usePassportStore = defineStore('passport', () => {
   // --- State (hydrated from localStorage on first load) ---
   const saved = import.meta.client ? JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') : {}
 
-  const checkIns = ref(saved.checkIns ?? [])   // [{ branchCode, timestamp, note }]
+  const checkIns = ref(saved.checkIns ?? [])             // [{ branchCode, timestamp, note }]
+  const completedChallenges = ref(saved.completedChallenges ?? [])  // ["BranchCode:index", ...]
   const profile = ref({
     name: '',
     favouriteBook: '',
@@ -18,10 +19,14 @@ export const usePassportStore = defineStore('passport', () => {
 
   // Persist to localStorage whenever state changes
   function persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ checkIns: checkIns.value, profile: profile.value }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      checkIns: checkIns.value,
+      profile: profile.value,
+      completedChallenges: completedChallenges.value,
+    }))
   }
 
-  watch([checkIns, profile], persist, { deep: true })
+  watch([checkIns, profile, completedChallenges], persist, { deep: true })
 
   // --- Getters ---
   const visitedBranchCodes = computed(() =>
@@ -38,6 +43,19 @@ export const usePassportStore = defineStore('passport', () => {
   }
 
   const visitCount = computed(() => visitedBranchCodes.value.size)
+
+  const completedChallengesCount = computed(() => completedChallenges.value.length)
+
+  function hasCompletedChallenge(branchCode, idx) {
+    return completedChallenges.value.includes(`${branchCode}:${idx}`)
+  }
+
+  function toggleChallenge(branchCode, idx) {
+    const key = `${branchCode}:${idx}`
+    const i = completedChallenges.value.indexOf(key)
+    if (i >= 0) completedChallenges.value.splice(i, 1)
+    else completedChallenges.value.push(key)
+  }
 
   // --- Actions ---
 
@@ -93,6 +111,10 @@ export const usePassportStore = defineStore('passport', () => {
     hasVisited,
     hasVisitedToday,
     visitCount,
+    completedChallenges,
+    completedChallengesCount,
+    hasCompletedChallenge,
+    toggleChallenge,
     checkIn,
     loadDemoState,
   }

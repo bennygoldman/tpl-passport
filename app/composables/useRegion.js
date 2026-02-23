@@ -45,3 +45,17 @@ export function getRegion(wardNo) {
 // Filters branch data to only physical, visitable locations (PhysicalBranch === 1)
 import branchData from '#data/tpl-branch-general-information-2023.json'
 export const physicalBranches = branchData.filter(b => b.PhysicalBranch === 1)
+
+// One fixed colour per region — used for branch list dots so dots are region-consistent
+export const REGION_COLORS = {
+  'Etobicoke':         '#c06b30',
+  'West End Toronto':  '#7b50c8',
+  'Downtown Toronto':  '#1a80a0',
+  'East End Toronto':  '#3a8a3a',
+  'Don Valley':        '#b85a90',
+  'Scarborough':       '#b84040',
+}
+
+export function getRegionColor(wardNo) {
+  return REGION_COLORS[getRegion(wardNo)] ?? '#8c849e'
+}

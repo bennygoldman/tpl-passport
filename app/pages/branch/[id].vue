@@ -10,10 +10,7 @@
       </NuxtLink>
 
       <div class="branch-hero">
-        <div class="stamp-preview" :style="stampStyles">
-          <div class="stamp-ring-preview" :style="{ borderRadius: stampStyles.borderRadius }" />
-          <span class="stamp-code-preview">{{ branch.BranchCode }}</span>
-        </div>
+        <StampShape :branchCode="branch.BranchCode" :wardNo="branch.WardNo" :size="72" />
         <div class="branch-title-area">
           <h1>{{ branch.BranchName }}</h1>
           <p class="branch-region">{{ branchRegion }}</p>
@@ -24,31 +21,17 @@
 
     <!-- Check-in -->
     <div class="checkin-area">
-      <button
+      <NuxtLink
+        v-if="checkinState !== 'blocked'"
+        :to="`/check-in?branch=${branch.BranchCode}`"
         class="checkin-btn"
-        :class="{
-          'checkin-btn--visited':  checkinState === 'visited',
-          'checkin-btn--success':  checkinState === 'success',
-          'checkin-btn--blocked':  checkinState === 'blocked',
-        }"
-        :disabled="checkinState === 'blocked'"
-        @click="openCheckInSheet"
+        :class="{ 'checkin-btn--visited': checkinState === 'visited' }"
       >
-        <svg v-if="checkinState === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        <template v-if="checkinState === 'success'">Stamp collected!</template>
-        <template v-else-if="checkinState === 'blocked'">Already visited today</template>
-        <template v-else-if="checkinState === 'visited'">Check in again</template>
+        <template v-if="checkinState === 'visited'">Check in again</template>
         <template v-else>Check in here</template>
-      </button>
-
-      <button class="qr-hint" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-          <rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/>
-        </svg>
-        Scan QR code · coming soon
+      </NuxtLink>
+      <button v-else class="checkin-btn checkin-btn--blocked" disabled>
+        Already visited today
       </button>
     </div>
 
@@ -110,21 +93,43 @@
       </div>
     </section>
 
-    <!-- Branch challenges (coming soon) -->
-    <section class="detail-section">
-      <h2 class="detail-heading">Branch challenges</h2>
+    <!-- Branch challenges — only shown after a check-in -->
+    <section v-if="passport.hasVisited(branch.BranchCode)" class="detail-section">
+      <h2 class="detail-heading">
+        Branch challenges
+        <span class="challenge-tally">{{ completedChallengesCount }}/{{ BRANCH_CHALLENGES.length }} completed</span>
+      </h2>
       <ul class="challenge-list">
-        <li class="challenge-item">
-          <span class="challenge-lock">🔒</span>
-          <span>Check out a book here</span>
-        </li>
-        <li class="challenge-item">
-          <span class="challenge-lock">🔒</span>
-          <span>Attend a branch program</span>
-        </li>
-        <li class="challenge-item">
-          <span class="challenge-lock">🔒</span>
-          <span>Meet a librarian</span>
+        <li
+          v-for="(challenge, i) in BRANCH_CHALLENGES"
+          :key="i"
+          class="challenge-item"
+          :class="{ 'challenge-item--done': passport.hasCompletedChallenge(branch.BranchCode, i) }"
+          @click="passport.toggleChallenge(branch.BranchCode, i)"
+        >
+          <svg class="challenge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <!-- Book icon -->
+            <template v-if="i === 0">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+            </template>
+            <!-- Calendar icon -->
+            <template v-else-if="i === 1">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </template>
+            <!-- Person icon -->
+            <template v-else>
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </template>
+          </svg>
+          <span class="challenge-label">{{ challenge.label }}</span>
+          <svg v-if="passport.hasCompletedChallenge(branch.BranchCode, i)" class="challenge-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
         </li>
       </ul>
     </section>
@@ -134,44 +139,11 @@
   <main class="page-content" v-else>
     <p class="empty-state">Branch not found.</p>
   </main>
-
-  <!-- Check-in bottom sheet -->
-  <Teleport to="body">
-    <div v-if="showSheet" class="sheet-backdrop" @click.self="closeSheet">
-        <div class="sheet">
-          <div class="sheet-handle" />
-          <div class="sheet-header">
-            <div class="sheet-stamp" :style="stampStyles">
-              <span>{{ branch?.BranchCode }}</span>
-            </div>
-            <div>
-              <p class="sheet-title">Check in at</p>
-              <p class="sheet-branch">{{ branch?.BranchName }}</p>
-            </div>
-          </div>
-          <textarea
-            v-model="noteText"
-            class="note-textarea"
-            placeholder="Add a note… (optional)"
-            rows="3"
-            maxlength="500"
-          />
-          <p class="note-count">{{ noteText.length }} / 500</p>
-          <div class="sheet-actions">
-            <button class="sheet-btn sheet-btn--cancel" @click="closeSheet">Cancel</button>
-            <button class="sheet-btn sheet-btn--confirm" @click="confirmCheckIn">
-              Collect stamp
-            </button>
-          </div>
-        </div>
-    </div>
-  </Teleport>
 </template>
 
 <script setup>
 import branchData from '#data/tpl-branch-general-information-2023.json'
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor, getStampShape } from '~/composables/useStampColor'
 import { getRegion } from '~/composables/useRegion'
 
 const route   = useRoute()
@@ -179,58 +151,27 @@ const passport = usePassportStore()
 
 const branch = computed(() => branchData.find(b => b.BranchCode === route.params.id))
 
-const stampStyles = computed(() => {
-  if (!branch.value) return {}
-  const { color, bg, border } = useStampColor(branch.value.WardNo)
-  const { borderRadius } = getStampShape(branch.value.BranchCode)
-  return { color, background: bg, borderColor: border, borderRadius }
-})
-
-const branchRegion   = computed(() => getRegion(branch.value?.WardNo) ?? '')
-const streetAddress  = computed(() => branch.value?.Address?.split(',')[0] ?? '')
-const mapsUrl        = computed(() => {
+const branchRegion  = computed(() => getRegion(branch.value?.WardNo) ?? '')
+const streetAddress = computed(() => branch.value?.Address?.split(',')[0] ?? '')
+const mapsUrl       = computed(() => {
   if (!branch.value) return '#'
   const q = encodeURIComponent(`${streetAddress.value}, Toronto, ON`)
   return `https://www.google.com/maps/search/?api=1&query=${q}`
 })
-const hasParking     = computed(() =>
+const hasParking = computed(() =>
   branch.value?.PublicParking &&
   branch.value.PublicParking !== '0' &&
   branch.value.PublicParking !== 0
 )
 
-// ── Check-in sheet ─────────────────────────────
-const showSheet    = ref(false)
-const flashSuccess = ref(false)
-const noteText     = ref('')
-
+// ── Check-in ──────────────────────────────────────
 const checkinState = computed(() => {
-  if (flashSuccess.value) return 'success'
   if (passport.hasVisitedToday(branch.value?.BranchCode)) return 'blocked'
   if (passport.hasVisited(branch.value?.BranchCode)) return 'visited'
   return 'idle'
 })
 
-function openCheckInSheet() {
-  if (checkinState.value === 'blocked') return
-  noteText.value = ''
-  showSheet.value = true
-}
-
-function closeSheet() {
-  showSheet.value = false
-}
-
-function confirmCheckIn() {
-  const result = passport.checkIn(branch.value.BranchCode, noteText.value.trim())
-  showSheet.value = false
-  if (result) {
-    flashSuccess.value = true
-    setTimeout(() => { flashSuccess.value = false }, 2500)
-  }
-}
-
-// ── Services ───────────────────────────────────
+// ── Services ──────────────────────────────────────
 const SERVICE_FLAGS = {
   KidsStop:             'Kids Stop',
   LeadingReading:       'Leading to Reading',
@@ -248,10 +189,10 @@ const services = computed(() => {
     .map(([, label]) => label)
 })
 
-// ── Events (hardcoded for MVP — replace with API when ready) ───
+// ── Events (hardcoded for MVP — replace with API when ready) ──
 const BRANCH_EVENTS = [
-  { title: 'Book Club: Winter Reads', date: '2026-02-25', time: '6:00pm',  age: 'Adults'     },
-  { title: 'Lego Building Challenge', date: '2026-03-01', time: '2:00pm',  age: 'Kids 6–12'  },
+  { title: 'Book Club: Winter Reads', date: '2026-02-25', time: '6:00pm',  age: 'Adults'    },
+  { title: 'Lego Building Challenge', date: '2026-03-01', time: '2:00pm',  age: 'Kids 6–12' },
 ]
 
 function formatEventMonth(date) {
@@ -262,7 +203,7 @@ function formatEventDay(date) {
   return new Date(date + 'T00:00:00').getDate()
 }
 
-// ── Past visits ────────────────────────────────
+// ── Past visits ───────────────────────────────────
 const pastVisitsHere = computed(() =>
   passport.checkIns.filter(c => c.branchCode === branch.value?.BranchCode)
 )
@@ -270,6 +211,18 @@ const pastVisitsHere = computed(() =>
 function formatVisitDate(iso) {
   return new Date(iso).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
+
+// ── Branch challenges ─────────────────────────────
+const BRANCH_CHALLENGES = [
+  { label: 'Check out a book here'   },
+  { label: 'Attend a branch program' },
+  { label: 'Meet a librarian'        },
+]
+
+const completedChallengesCount = computed(() =>
+  BRANCH_CHALLENGES.reduce((n, _, i) =>
+    n + (passport.hasCompletedChallenge(branch.value?.BranchCode, i) ? 1 : 0), 0)
+)
 </script>
 
 <style scoped>
@@ -293,46 +246,17 @@ function formatVisitDate(iso) {
   gap: 16px;
 }
 
-.stamp-preview {
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-  border: 2.5px solid currentColor;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* border-radius set by stampStyles inline */
-}
-
-.stamp-ring-preview {
-  position: absolute;
-  inset: 5px;
-  border: 1.5px solid currentColor;
-  opacity: 0.35;
-  /* border-radius set inline to match outer shape */
-}
-
-.stamp-code-preview {
-  font-family: var(--font-stamp);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
 .branch-title-area h1  { font-size: 1.35rem; line-height: 1.2; margin-bottom: 3px; }
 .branch-region         { font-size: 0.8rem; color: var(--color-text-mid); font-weight: 600; margin-top: 2px; }
 .branch-hours          { font-size: 0.72rem; color: var(--color-text-muted); margin-top: 3px; }
 
 /* Check-in */
 .checkin-area {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   margin: 18px 0 20px;
 }
 
 .checkin-btn {
+  display: flex;
   width: 100%;
   padding: 16px;
   background: var(--tpl-blue);
@@ -343,33 +267,16 @@ function formatVisitDate(iso) {
   font-weight: 700;
   font-family: var(--font-body);
   cursor: pointer;
-  display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   transition: background 0.2s, transform 0.1s;
   box-shadow: 0 4px 14px rgba(0, 95, 192, 0.32);
+  text-decoration: none;
 }
 .checkin-btn:active { transform: scale(0.98); }
 .checkin-btn--visited { background: var(--tpl-navy); box-shadow: none; }
-.checkin-btn--success { background: #1a7f4b; box-shadow: 0 4px 14px rgba(26,127,75,0.3); }
 .checkin-btn--blocked { background: var(--color-text-muted); box-shadow: none; cursor: default; opacity: 0.7; }
-
-.qr-hint {
-  width: 100%;
-  padding: 10px;
-  background: transparent;
-  color: var(--color-text-muted);
-  border: 1.5px dashed var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.78rem;
-  font-family: var(--font-body);
-  cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
 
 /* Info card */
 .info-card {
@@ -402,6 +309,16 @@ function formatVisitDate(iso) {
 .detail-heading {
   font-size: 1rem;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.challenge-tally {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .tag-list {
@@ -515,145 +432,47 @@ function formatVisitDate(iso) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   color: var(--color-text-muted);
-  opacity: 0.75;
-}
-
-.challenge-lock { font-size: 0.85rem; }
-
-/* Bottom sheet — height: 100dvh shrinks when keyboard appears on mobile */
-.sheet-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100dvh;
-  background: rgba(0, 28, 113, 0.4);
-  z-index: 200;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.sheet {
-  background: var(--color-paper);
-  border-radius: 20px 20px 0 0;
-  padding: 12px 20px 40px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 80dvh;
-  overflow-y: auto;
-}
-
-.sheet-handle {
-  width: 40px;
-  height: 4px;
-  background: var(--color-border);
-  border-radius: 2px;
-  margin: 0 auto 20px;
-}
-
-.sheet-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.sheet-stamp {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  font-weight: 700;
-  font-optical-sizing: auto;
-}
-
-.sheet-title {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.sheet-branch {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
-  font-optical-sizing: auto;
-  color: var(--tpl-navy);
-}
-
-.note-textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 1rem; /* 16px minimum prevents iOS Safari auto-zoom */
-  font-family: var(--font-body);
-  background: var(--color-surface);
-  color: var(--color-text);
-  outline: none;
-  resize: none;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-}
-
-.note-textarea:focus { border-color: var(--tpl-blue); }
-
-.note-count {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  text-align: right;
-  margin: 4px 2px 16px;
-}
-
-.sheet-actions {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 10px;
-}
-
-.sheet-btn {
-  padding: 14px;
-  border-radius: var(--radius);
-  font-size: 0.95rem;
-  font-weight: 700;
-  font-family: var(--font-body);
   cursor: pointer;
-  border: none;
-  transition: opacity 0.15s;
+  transition: background 0.12s, border-color 0.12s;
+  user-select: none;
 }
 
-.sheet-btn--cancel {
-  background: var(--color-border-soft);
-  color: var(--color-text-muted);
+.challenge-item:active {
+  background: var(--color-paper);
 }
 
-.sheet-btn--confirm {
-  background: var(--tpl-blue);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0,95,192,0.3);
+.challenge-item--done {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--tpl-blue) 5%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--tpl-blue) 22%, transparent);
 }
 
-/* Sheet open animation (CSS-only, no Vue Transition) */
-@keyframes sheet-in {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+.challenge-label {
+  flex: 1;
 }
 
-.sheet {
-  animation: sheet-in 0.25s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+.challenge-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke: var(--color-text-muted);
+  transition: stroke 0.12s;
+}
+
+.challenge-item--done .challenge-icon {
+  stroke: var(--tpl-blue);
+}
+
+.challenge-check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke: var(--tpl-blue);
 }
 </style>

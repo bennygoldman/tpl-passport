@@ -157,7 +157,7 @@
 <script setup>
 import jsQR from 'jsqr'
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor, getStampShape } from '~/composables/useStampColor'
+import { useStampColor, getStampShape } from '~/composables/useStamp'
 import { physicalBranches, getRegion } from '~/composables/useRegion'
 
 const route   = useRoute()

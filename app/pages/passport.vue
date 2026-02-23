@@ -18,10 +18,7 @@
           :class="{ 'stamp-slot--collected': passport.hasVisited(branch.BranchCode) }"
         >
           <template v-if="passport.hasVisited(branch.BranchCode)">
-            <div class="stamp-shape" :style="stampStyle(branch)">
-              <div class="stamp-ring" :style="{ borderRadius: getStampShape(branch.BranchCode).borderRadius }" />
-              <span class="stamp-code">{{ branch.BranchCode }}</span>
-            </div>
+            <StampShape :branchCode="branch.BranchCode" :wardNo="branch.WardNo" />
             <span class="stamp-name">{{ branch.BranchName }}</span>
             <span class="stamp-date">{{ visitDate(branch.BranchCode) }}</span>
           </template>
@@ -38,7 +35,6 @@
 
 <script setup>
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor, getStampShape } from '~/composables/useStampColor'
 import { physicalBranches, REGION_ORDER, getRegion } from '~/composables/useRegion'
 
 const passport = usePassportStore()
@@ -52,19 +48,6 @@ const byRegion = computed(() => {
   }
   return map
 })
-
-function stampStyle(branch) {
-  const shape = getStampShape(branch.BranchCode)
-  const { color, bg, border } = useStampColor(branch.WardNo)
-  return {
-    borderRadius: shape.borderRadius,
-    width: shape.width,
-    height: shape.height,
-    color,
-    background: bg,
-    borderColor: border,
-  }
-}
 
 function visitDate(branchCode) {
   const c = passport.checkIns.find(x => x.branchCode === branchCode)
@@ -99,8 +82,7 @@ function visitDate(branchCode) {
   border-bottom: none;
 }
 
-/* Shared-border grid — cells share lines rather than each having their own box.
-   Container owns the top and left edges; each cell owns its right and bottom edge. */
+/* Shared-border grid — cells share lines rather than each having their own box. */
 .stamp-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -123,39 +105,9 @@ function visitDate(branchCode) {
   min-height: 150px;
 }
 
-/* Shape container — width/height/border-radius all set inline per branch */
-.stamp-shape {
-  border: 2.5px solid currentColor;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease;
-  flex-shrink: 0;
-  box-shadow: 0 2px 12px color-mix(in srgb, currentColor 22%, transparent);
-}
-
-.stamp-slot--collected .stamp-shape:active {
-  transform: scale(0.94) rotate(-2deg);
-}
-
-/* Inner ring — mimics the impression line of a real rubber stamp */
-.stamp-ring {
-  position: absolute;
-  inset: 6px;
-  border: 1.5px solid currentColor;
-  opacity: 0.22;
-}
-
-/* Library code — Roboto Condensed for that tight, official-label look */
-.stamp-code {
-  font-family: var(--font-stamp);
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  position: relative;
-  z-index: 1;
+/* Press animation — uses --stamp-rotate from StampShape to preserve its tilt */
+.stamp-slot--collected :deep(.stamp-shape):active {
+  transform: scale(0.94) rotate(calc(var(--stamp-rotate, 0deg) - 2deg));
 }
 
 .stamp-name {

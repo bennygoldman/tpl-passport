@@ -31,7 +31,7 @@
             <NuxtLink :to="`/branch/${visit.branchCode}`" class="checkin-row">
               <div
                 class="checkin-dot"
-                :style="{ background: stampColor(visit.branchCode).color }"
+                :style="{ background: REGION_COLORS[regionMap[visit.branchCode]] ?? 'var(--color-border)' }"
               />
               <div class="checkin-info">
                 <span class="checkin-name">{{ branchMap[visit.branchCode] ?? visit.branchCode }}</span>
@@ -57,14 +57,12 @@
 <script setup>
 import branchData from '#data/tpl-branch-general-information-2023.json'
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor } from '~/composables/useStampColor'
-import { getRegion } from '~/composables/useRegion'
+import { getRegion, REGION_COLORS } from '~/composables/useRegion'
 
 const passport = usePassportStore()
 
-const branchMap  = Object.fromEntries(branchData.map(b => [b.BranchCode, b.BranchName]))
-const wardNoMap  = Object.fromEntries(branchData.map(b => [b.BranchCode, b.WardNo]))
-const regionMap  = Object.fromEntries(branchData.map(b => [b.BranchCode, getRegion(b.WardNo)]))
+const branchMap = Object.fromEntries(branchData.map(b => [b.BranchCode, b.BranchName]))
+const regionMap = Object.fromEntries(branchData.map(b => [b.BranchCode, getRegion(b.WardNo)]))
 
 const grouped = computed(() => {
   const now = new Date()
@@ -112,10 +110,6 @@ const weekStreak = computed(() => {
   }
   return streak
 })
-
-function stampColor(branchCode) {
-  return useStampColor(wardNoMap[branchCode] ?? 1)
-}
 
 function formatTime(iso) {
   const d = new Date(iso)

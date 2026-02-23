@@ -40,9 +40,11 @@
   --shadow-md:  0 4px 16px rgba(0,28,113,0.12), 0 1px 4px rgba(0,28,113,0.08);
 
   /* Typography */
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body:    'Roboto', system-ui, sans-serif;
-  --font-stamp:   'Roboto Condensed', 'Roboto', sans-serif;
+  --font-display:       'Fraunces', Georgia, serif;
+  --font-body:          'Roboto', system-ui, sans-serif;
+  --font-stamp:         'Roboto Condensed', 'Roboto', sans-serif;
+  --font-stamp-elite:   'Special Elite', cursive;
+  --font-stamp-stencil: 'Allerta Stencil', sans-serif;
 
   /* Brand text — navy in light mode (used for the app title etc.) */
   --color-brand-text: var(--tpl-navy);

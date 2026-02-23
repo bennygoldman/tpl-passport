@@ -168,7 +168,7 @@
 <script setup>
 import { usePassportStore } from '~/stores/passport'
 import { physicalBranches } from '~/composables/useRegion'
-import { useStampColor } from '~/composables/useStampColor'
+import { useStampColor } from '~/composables/useStamp'
 
 const passport = usePassportStore()
 

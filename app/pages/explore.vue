@@ -37,21 +37,7 @@
     <!-- Flat alphabetical list -->
     <ul v-if="sort === 'alpha'" class="branch-list">
       <li v-for="branch in filteredBranches" :key="branch.BranchCode">
-        <NuxtLink :to="`/branch/${branch.BranchCode}`" class="branch-row">
-          <div class="branch-dot" :style="dotStyle(branch)" />
-          <div class="branch-info">
-            <span class="branch-name">{{ branch.BranchName }}</span>
-            <span class="branch-meta">{{ getRegion(branch.WardNo) }}</span>
-          </div>
-          <div class="branch-right">
-            <svg v-if="passport.hasVisited(branch.BranchCode)" class="visited-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            <svg v-else class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </div>
-        </NuxtLink>
+        <BranchRow :branch="branch" />
       </li>
     </ul>
 
@@ -61,21 +47,7 @@
         <p class="section-label">{{ region }}</p>
         <ul class="branch-list">
           <li v-for="branch in byRegion[region]" :key="branch.BranchCode">
-            <NuxtLink :to="`/branch/${branch.BranchCode}`" class="branch-row">
-              <div class="branch-dot" :style="dotStyle(branch)" />
-              <div class="branch-info">
-                <span class="branch-name">{{ branch.BranchName }}</span>
-                <span class="branch-meta">{{ getRegion(branch.WardNo) }}</span>
-              </div>
-              <div class="branch-right">
-                <svg v-if="passport.hasVisited(branch.BranchCode)" class="visited-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-                <svg v-else class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </div>
-            </NuxtLink>
+            <BranchRow :branch="branch" />
           </li>
         </ul>
       </div>
@@ -86,13 +58,11 @@
 
 <script setup>
 import { usePassportStore } from '~/stores/passport'
-import { useStampColor } from '~/composables/useStampColor'
 import { physicalBranches, REGION_ORDER, getRegion } from '~/composables/useRegion'
 
-const passport = usePassportStore()
-
-const query        = ref('')
-const sort         = ref('alpha')
+const passport      = usePassportStore()
+const query         = ref('')
+const sort          = ref('alpha')
 const onlyUnvisited = ref(false)
 
 const sortOptions = [
@@ -126,7 +96,6 @@ const byRegion = computed(() => {
     const r = getRegion(b.WardNo)
     if (r) map[r].push(b)
   }
-  // Sort within each region alphabetically
   for (const r of REGION_ORDER) map[r].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
   return map
 })
@@ -134,14 +103,6 @@ const byRegion = computed(() => {
 const visibleRegions = computed(() =>
   REGION_ORDER.filter(r => byRegion.value[r]?.length > 0)
 )
-
-function dotStyle(branch) {
-  return {
-    background: passport.hasVisited(branch.BranchCode)
-      ? useStampColor(branch.WardNo).color
-      : 'var(--color-border)',
-  }
-}
 </script>
 
 <style scoped>
@@ -226,57 +187,4 @@ function dotStyle(branch) {
   flex-direction: column;
   gap: 6px;
 }
-
-.branch-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  text-decoration: none;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.12s;
-}
-
-.branch-row:active {
-  background: var(--color-paper);
-  border-color: var(--color-border);
-}
-
-.branch-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: background 0.2s;
-}
-
-.branch-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.branch-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.branch-meta {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.branch-right { flex-shrink: 0; }
-
-.visited-check { width: 16px; height: 16px; stroke: var(--tpl-blue); }
-.chevron       { width: 16px; height: 16px; stroke: var(--color-border); }
 </style>
