@@ -69,18 +69,13 @@ function visitDate(branchCode) {
   color: var(--color-text-muted);
 }
 
-/* Dashed separators between regions — passport page feel */
+/* Spacing between district sections — the grid's own borders provide visual separation */
 .region-section {
-  padding-bottom: 24px;
-  border-bottom: 1.5px dashed var(--color-border);
+  padding-bottom: 20px;
 }
 
 .region-section + .region-section {
-  padding-top: 20px;
-}
-
-.region-section:last-child {
-  border-bottom: none;
+  padding-top: 16px;
 }
 
 /* Vertical lines (left edge, middle divider, right edge) live on pseudo-elements, not grid cells.
@@ -93,24 +88,31 @@ function visitDate(branchCode) {
   gap: 0;
 }
 
-/* Left and right outer borders */
+/* Top border + left/right outer borders. border-top works on iOS; left/right use gradient workaround. */
 .stamp-grid::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-left: 1.5px dashed var(--color-border);
-  border-right: 1.5px dashed var(--color-border);
+  border-top: 1.5px dashed var(--color-border);
+  background-image:
+    repeating-linear-gradient(to bottom, var(--color-border) 0, var(--color-border) 4px, transparent 4px, transparent 8px),
+    repeating-linear-gradient(to bottom, var(--color-border) 0, var(--color-border) 4px, transparent 4px, transparent 8px);
+  background-size: 1.5px 8px, 1.5px 8px;
+  background-position: 0 0, 100% 0;
+  background-repeat: repeat-y, repeat-y;
   pointer-events: none;
 }
 
-/* Middle vertical divider */
+/* Middle vertical divider — same gradient technique */
 .stamp-grid::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
   left: 50%;
-  border-left: 1.5px dashed var(--color-border);
+  width: 1.5px;
+  background-image: repeating-linear-gradient(to bottom, var(--color-border) 0, var(--color-border) 4px, transparent 4px, transparent 8px);
+  background-size: 1.5px 8px;
   pointer-events: none;
 }
 
@@ -123,7 +125,7 @@ function visitDate(branchCode) {
   text-decoration: none;
   color: var(--color-text);
   padding: 20px 12px;
-  border-top: 1.5px dashed var(--color-border);
+  border-bottom: 1.5px dashed var(--color-border);
   min-height: 150px;
 }
 
