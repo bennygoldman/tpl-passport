@@ -2,13 +2,12 @@
 
 A mobile-first stamp-collecting app for the Toronto Public Library. Visit branches, collect stamps, complete challenges, and fill your passport.
 
-<!-- Screenshots — add once captured
 <p align="center">
-  <img src="docs/home.png" width="30%" />
-  <img src="docs/passport.png" width="30%" />
-  <img src="docs/branch.png" width="30%" />
+  <img src="docs/screenshot-home.png" width="22%" />
+  <img src="docs/screenshot-explore.png" width="22%" />
+  <img src="docs/screenshot-passport.png" width="22%" />
+  <img src="docs/screenshot-branch.png" width="22%" />
 </p>
--->
 
 ## Try it
 
