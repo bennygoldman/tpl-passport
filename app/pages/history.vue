@@ -31,7 +31,7 @@
             <NuxtLink :to="`/branch/${visit.branchCode}`" class="checkin-row">
               <div
                 class="checkin-dot"
-                :style="{ background: REGION_COLORS[regionMap[visit.branchCode]] ?? 'var(--color-border)' }"
+                :style="{ background: DISTRICT_COLORS[regionMap[visit.branchCode]] ?? 'var(--color-border)' }"
               />
               <div class="checkin-info">
                 <span class="checkin-name">{{ branchMap[visit.branchCode] ?? visit.branchCode }}</span>
@@ -55,14 +55,13 @@
 </template>
 
 <script setup>
-import branchData from '#data/tpl-branch-general-information-2023.json'
 import { usePassportStore } from '~/stores/passport'
-import { getRegion, REGION_COLORS } from '~/composables/useRegion'
+import { physicalBranches, DISTRICT_COLORS } from '~/composables/useRegion'
 
 const passport = usePassportStore()
 
-const branchMap = Object.fromEntries(branchData.map(b => [b.BranchCode, b.BranchName]))
-const regionMap = Object.fromEntries(branchData.map(b => [b.BranchCode, getRegion(b.WardNo)]))
+const branchMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.BranchName]))
+const regionMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.District]))
 
 const grouped = computed(() => {
   const now = new Date()

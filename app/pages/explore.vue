@@ -58,7 +58,7 @@
 
 <script setup>
 import { usePassportStore } from '~/stores/passport'
-import { physicalBranches, REGION_ORDER, getRegion } from '~/composables/useRegion'
+import { physicalBranches, DISTRICT_ORDER, DISTRICT_COLORS } from '~/composables/useRegion'
 
 const passport      = usePassportStore()
 const query         = ref('')
@@ -91,17 +91,16 @@ const filteredBranches = computed(() => {
 
 const byRegion = computed(() => {
   const map = {}
-  for (const region of REGION_ORDER) map[region] = []
+  for (const d of DISTRICT_ORDER) map[d] = []
   for (const b of filteredBranches.value) {
-    const r = getRegion(b.WardNo)
-    if (r) map[r].push(b)
+    if (b.District) map[b.District]?.push(b)
   }
-  for (const r of REGION_ORDER) map[r].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
+  for (const d of DISTRICT_ORDER) map[d].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
   return map
 })
 
 const visibleRegions = computed(() =>
-  REGION_ORDER.filter(r => byRegion.value[r]?.length > 0)
+  DISTRICT_ORDER.filter(d => byRegion.value[d]?.length > 0)
 )
 </script>
 

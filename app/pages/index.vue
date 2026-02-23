@@ -148,7 +148,7 @@
 <script setup>
 import { usePassportStore } from '~/stores/passport'
 import { useStampColor } from '~/composables/useStamp'
-import { physicalBranches, getRegion } from '~/composables/useRegion'
+import { physicalBranches } from '~/composables/useRegion'
 
 const passport = usePassportStore()
 
@@ -157,7 +157,7 @@ const totalBranches = physicalBranches.length
 const totalItems    = totalBranches + totalBranches * CHALLENGES_PER_BRANCH  // 400
 
 const branchMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.BranchName]))
-const regionMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, getRegion(b.WardNo)]))
+const regionMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.District]))
 const wardNoMap = Object.fromEntries(physicalBranches.map(b => [b.BranchCode, b.WardNo]))
 
 // Progress includes both branch stamps and completed challenges

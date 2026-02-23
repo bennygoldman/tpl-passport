@@ -142,16 +142,15 @@
 </template>
 
 <script setup>
-import branchData from '#data/tpl-branch-general-information-2023.json'
+import branchData from '#data/updated-branch-info.json'
 import { usePassportStore } from '~/stores/passport'
-import { getRegion } from '~/composables/useRegion'
 
 const route   = useRoute()
 const passport = usePassportStore()
 
 const branch = computed(() => branchData.find(b => b.BranchCode === route.params.id))
 
-const branchRegion  = computed(() => getRegion(branch.value?.WardNo) ?? '')
+const branchRegion  = computed(() => branch.value?.District ?? '')
 const streetAddress = computed(() => branch.value?.Address?.split(',')[0] ?? '')
 const mapsUrl       = computed(() => {
   if (!branch.value) return '#'

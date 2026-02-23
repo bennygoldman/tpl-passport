@@ -1,61 +1,22 @@
-// Maps Toronto's 25 wards into 6 geographic regions for passport grouping.
-// Branches with no WardNo are service/virtual entities and are excluded.
+// District groupings come directly from the branch data — no ward mapping needed.
 
-export const WARD_TO_REGION = {
-  1: 'Etobicoke',
-  2: 'Etobicoke',
-  3: 'Etobicoke',
-  4: 'West End Toronto',
-  5: 'West End Toronto',
-  6: 'Downtown Toronto',
-  7: 'West End Toronto',
-  8: 'Downtown Toronto',
-  9: 'West End Toronto',
-  10: 'Downtown Toronto',
-  11: 'Downtown Toronto',
-  12: 'Downtown Toronto',
-  13: 'Downtown Toronto',
-  14: 'East End Toronto',
-  15: 'Don Valley',
-  16: 'Don Valley',
-  17: 'Don Valley',
-  18: 'Downtown Toronto',
-  19: 'East End Toronto',
-  20: 'Scarborough',
-  21: 'Scarborough',
-  22: 'Scarborough',
-  23: 'Scarborough',
-  24: 'Scarborough',
-  25: 'Scarborough',
-}
+import branchData from '#data/updated-branch-info.json'
+export const physicalBranches = branchData.filter(b => b.PhysicalBranch === 1)
 
-export const REGION_ORDER = [
-  'Etobicoke',
-  'West End Toronto',
-  'Downtown Toronto',
-  'East End Toronto',
-  'Don Valley',
+export const DISTRICT_ORDER = [
+  'Etobicoke-York',
+  'North York',
+  'Toronto-East York',
   'Scarborough',
 ]
 
-export function getRegion(wardNo) {
-  return WARD_TO_REGION[parseInt(wardNo)] ?? null
-}
-
-// Filters branch data to only physical, visitable locations (PhysicalBranch === 1)
-import branchData from '#data/tpl-branch-general-information-2023.json'
-export const physicalBranches = branchData.filter(b => b.PhysicalBranch === 1)
-
-// One fixed colour per region — used for branch list dots so dots are region-consistent
-export const REGION_COLORS = {
-  'Etobicoke':         '#c06b30',
-  'West End Toronto':  '#7b50c8',
-  'Downtown Toronto':  '#1a80a0',
-  'East End Toronto':  '#3a8a3a',
-  'Don Valley':        '#b85a90',
+export const DISTRICT_COLORS = {
+  'Etobicoke-York':    '#c06b30',
+  'North York':        '#7b50c8',
+  'Toronto-East York': '#1a80a0',
   'Scarborough':       '#b84040',
 }
 
-export function getRegionColor(wardNo) {
-  return REGION_COLORS[getRegion(wardNo)] ?? '#8c849e'
+export function getDistrictColor(district) {
+  return DISTRICT_COLORS[district] ?? '#8c849e'
 }

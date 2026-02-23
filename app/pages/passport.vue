@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <div v-for="region in REGION_ORDER" :key="region" class="region-section">
+    <div v-for="region in DISTRICT_ORDER" :key="region" class="region-section">
       <p class="section-label">{{ region }}</p>
       <div class="stamp-grid">
         <NuxtLink
@@ -35,16 +35,15 @@
 
 <script setup>
 import { usePassportStore } from '~/stores/passport'
-import { physicalBranches, REGION_ORDER, getRegion } from '~/composables/useRegion'
+import { physicalBranches, DISTRICT_ORDER } from '~/composables/useRegion'
 
 const passport = usePassportStore()
 
 const byRegion = computed(() => {
   const map = {}
-  for (const region of REGION_ORDER) map[region] = []
+  for (const d of DISTRICT_ORDER) map[d] = []
   for (const b of physicalBranches) {
-    const region = getRegion(b.WardNo)
-    if (region) map[region].push(b)
+    if (b.District) map[b.District]?.push(b)
   }
   return map
 })

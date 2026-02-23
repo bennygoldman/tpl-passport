@@ -158,7 +158,7 @@
 import jsQR from 'jsqr'
 import { usePassportStore } from '~/stores/passport'
 import { useStampColor, getStampShape } from '~/composables/useStamp'
-import { physicalBranches, getRegion } from '~/composables/useRegion'
+import { physicalBranches } from '~/composables/useRegion'
 
 const route   = useRoute()
 const passport = usePassportStore()
@@ -176,7 +176,7 @@ const selectedBranch = computed(() =>
     : null
 )
 
-const selectedRegion = computed(() => getRegion(selectedBranch.value?.WardNo) ?? '')
+const selectedRegion = computed(() => selectedBranch.value?.District ?? '')
 
 const alreadyVisitedToday = computed(() =>
   passport.hasVisitedToday(selectedBranch.value?.BranchCode)
