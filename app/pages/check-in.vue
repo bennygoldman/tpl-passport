@@ -31,15 +31,44 @@
         </p>
       </header>
 
-      <!-- Branch selector (manual — hidden when pre-filled via URL or QR scan) -->
+      <!-- QR scan — primary action, shown until a branch is selected -->
+      <div v-if="!prefilled && !scanned && !selectedBranch" class="qr-primary-area">
+        <button class="qr-btn-primary" @click="openScanner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            <rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/>
+          </svg>
+          Scan QR code
+        </button>
+        <p class="or-divider">or</p>
+      </div>
+
+      <!-- Branch combo box — manual fallback, hidden when pre-filled via URL or QR scan -->
       <div v-if="!prefilled && !scanned" class="field-group">
-        <label class="field-label" for="branch-select">Branch</label>
-        <select id="branch-select" v-model="selectedCode" class="branch-select">
-          <option value="">Choose a branch…</option>
-          <option v-for="b in sortedBranches" :key="b.BranchCode" :value="b.BranchCode">
-            {{ b.BranchName }}
-          </option>
-        </select>
+        <label class="field-label" for="branch-search">Branch</label>
+        <div class="combo-wrap">
+          <input
+            id="branch-search"
+            v-model="searchText"
+            class="branch-combo"
+            type="text"
+            autocomplete="off"
+            placeholder="Search branches…"
+            @focus="showDropdown = true"
+            @blur="onComboBlur"
+            @input="selectedCode = ''"
+          />
+          <ul v-if="showDropdown && filteredBranches.length" class="combo-dropdown">
+            <li
+              v-for="b in filteredBranches"
+              :key="b.BranchCode"
+              class="combo-option"
+              @mousedown.prevent="selectBranch(b)"
+            >
+              {{ b.BranchName }}
+            </li>
+          </ul>
+        </div>
       </div>
 
       <!-- Stamp preview -->
@@ -107,22 +136,21 @@
       <!-- CTA -->
       <div class="cta-area">
         <button
+          v-if="selectedBranch"
           class="checkin-btn"
-          :disabled="!selectedBranch || alreadyVisitedToday"
+          :disabled="alreadyVisitedToday"
           @click="doCheckIn"
         >
-          Collect stamp
-        </button>
-
-        <button class="qr-btn" @click="openScanner">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="15" height="15">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-            <rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/>
-          </svg>
-          Scan QR code
+          Check in
         </button>
 
         <p v-if="scanError" class="scan-error">{{ scanError }}</p>
+
+        <p class="qr-tip">
+          Need a QR code to scan? Open
+          <a href="https://tpl-passport.vercel.app/qr-print" target="_blank" rel="noopener" class="qr-tip-link">tpl&#8209;passport.vercel.app/qr&#8209;print</a>
+          on another device.
+        </p>
       </div>
     </template>
 
@@ -169,6 +197,26 @@ const prefilled    = computed(() => !!route.query.branch)
 const scanned      = ref(false)   // true after a successful QR scan
 
 const sortedBranches = [...physicalBranches].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
+
+// Combo box state
+const searchText   = ref('')
+const showDropdown = ref(false)
+
+const filteredBranches = computed(() => {
+  const q = searchText.value.trim().toLowerCase()
+  if (!q) return sortedBranches
+  return sortedBranches.filter(b => b.BranchName.toLowerCase().includes(q))
+})
+
+function selectBranch(branch) {
+  selectedCode.value = branch.BranchCode
+  searchText.value   = branch.BranchName
+  showDropdown.value = false
+}
+
+function onComboBlur() {
+  setTimeout(() => { showDropdown.value = false }, 150)
+}
 
 const selectedBranch = computed(() =>
   selectedCode.value
@@ -227,6 +275,7 @@ const successStampStyle = computed(() => {
 function reset() {
   result.value       = null
   selectedCode.value = ''
+  searchText.value   = ''
   scanned.value      = false
   noteText.value     = ''
   photoPreview.value = null
@@ -348,7 +397,50 @@ onUnmounted(closeScanner)
   color: var(--color-text-muted);
 }
 
-.branch-select {
+/* QR primary area */
+.qr-primary-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.qr-btn-primary {
+  width: 100%;
+  padding: 16px;
+  background: var(--tpl-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  box-shadow: 0 4px 14px rgba(0, 95, 192, 0.32);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.qr-btn-primary:active { transform: scale(0.98); }
+
+.or-divider {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Combo box */
+.combo-wrap {
+  position: relative;
+}
+
+.branch-combo {
   width: 100%;
   padding: 14px 16px;
   border: 1px solid var(--color-border);
@@ -358,16 +450,37 @@ onUnmounted(closeScanner)
   background: var(--color-surface);
   color: var(--color-text);
   outline: none;
-  appearance: none;
-  -webkit-appearance: none;
   box-shadow: var(--shadow-sm);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c849e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 38px;
+  box-sizing: border-box;
 }
 
-.branch-select:focus { border-color: var(--tpl-blue); }
+.branch-combo:focus { border-color: var(--tpl-blue); }
+
+.combo-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.combo-option {
+  padding: 11px 16px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.combo-option:hover { background: color-mix(in srgb, var(--tpl-blue) 8%, var(--color-surface)); }
 
 .note-textarea {
   width: 100%;
@@ -536,35 +649,29 @@ onUnmounted(closeScanner)
 
 .checkin-btn:not(:disabled):active { transform: scale(0.98); }
 
-.qr-btn {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  color: var(--tpl-blue);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: var(--font-body);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.qr-btn:active {
-  background: color-mix(in srgb, var(--tpl-blue) 6%, transparent);
-  border-color: var(--tpl-blue);
-}
-
 .scan-error {
   font-size: 0.8rem;
   color: #c0392b;
   text-align: center;
   padding: 0 8px;
 }
+
+.qr-tip {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 0 8px;
+  line-height: 1.5;
+}
+
+.qr-tip-link {
+  color: var(--tpl-blue);
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.qr-tip-link:hover { text-decoration: underline; }
 
 /* ── Success state ─────────────────────────── */
 .success-view {
