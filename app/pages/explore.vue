@@ -2,7 +2,7 @@
   <main class="page-content">
     <header class="page-header">
       <h1>Explore</h1>
-      <p class="sub">{{ filteredBranches.length }} {{ onlyUnvisited ? 'unvisited' : '' }} branches{{ onlyUnvisited ? ' left to go' : ' across Toronto' }}</p>
+      <p class="sub">{{ filteredBranches.length }} {{ visitFilter ? visitFilter : '' }} branches{{ visitFilter === 'unvisited' ? ' left to go' : ' across Toronto' }}</p>
     </header>
 
     <div class="controls">
@@ -18,36 +18,57 @@
         />
       </div>
 
-      <div class="sort-tabs">
+      <div class="pill-bar">
         <button
-          v-for="opt in sortOptions"
-          :key="opt.value"
           class="sort-tab"
-          :class="{ 'sort-tab--active': sort === opt.value }"
-          @click="sort = opt.value"
-        >{{ opt.label }}</button>
+          :class="{ 'sort-tab--active': sort === 'alpha' }"
+          @click="selectSort('alpha')"
+        >A–Z</button>
         <button
-          class="sort-tab sort-tab--pill"
-          :class="{ 'sort-tab--active': onlyUnvisited }"
-          @click="onlyUnvisited = !onlyUnvisited"
-        >Not yet</button>
+          class="sort-tab"
+          :class="{ 'sort-tab--active': sort === 'nearby' }"
+          @click="selectSort('nearby')"
+        >
+          <span v-if="geoStatus === 'loading'" class="geo-spinner" />
+          Nearby
+        </button>
+        <span class="pill-divider" />
+        <button
+          class="sort-tab"
+          :class="{ 'sort-tab--active': visitFilter === 'unvisited' }"
+          @click="visitFilter = visitFilter === 'unvisited' ? null : 'unvisited'"
+        >Unvisited</button>
+        <button
+          class="sort-tab"
+          :class="{ 'sort-tab--active': visitFilter === 'visited' }"
+          @click="visitFilter = visitFilter === 'visited' ? null : 'visited'"
+        >Visited</button>
+        <button
+          class="sort-tab"
+          :class="{ 'sort-tab--active': byDistrict }"
+          @click="byDistrict = !byDistrict"
+        >District</button>
       </div>
+
+      <p v-if="geoStatus === 'denied'" class="geo-error">
+        Location unavailable — {{ navigator?.geolocation ? 'allow location access in browser settings' : 'geolocation requires HTTPS or localhost' }}.
+      </p>
     </div>
 
-    <!-- Flat alphabetical list -->
-    <ul v-if="sort === 'alpha'" class="branch-list">
+    <!-- Flat list -->
+    <ul v-if="!byDistrict" class="branch-list">
       <li v-for="branch in filteredBranches" :key="branch.BranchCode">
-        <BranchRow :branch="branch" />
+        <BranchRow :branch="branch" :distance="distanceMap[branch.BranchCode] ?? null" />
       </li>
     </ul>
 
-    <!-- Grouped by region -->
+    <!-- Grouped by district -->
     <template v-else>
-      <div v-for="region in visibleRegions" :key="region" class="region-group">
-        <p class="section-label">{{ region }}</p>
+      <div v-for="district in visibleDistricts" :key="district" class="region-group">
+        <p class="section-label">{{ district }}</p>
         <ul class="branch-list">
-          <li v-for="branch in byRegion[region]" :key="branch.BranchCode">
-            <BranchRow :branch="branch" />
+          <li v-for="branch in byRegion[district]" :key="branch.BranchCode">
+            <BranchRow :branch="branch" :distance="distanceMap[branch.BranchCode] ?? null" />
           </li>
         </ul>
       </div>
@@ -58,17 +79,66 @@
 
 <script setup>
 import { usePassportStore } from '~/stores/passport'
-import { physicalBranches, DISTRICT_ORDER, DISTRICT_COLORS } from '~/composables/useRegion'
+import { physicalBranches, DISTRICT_ORDER } from '~/composables/useRegion'
 
-const passport      = usePassportStore()
-const query         = ref('')
-const sort          = ref('alpha')
-const onlyUnvisited = ref(false)
+const passport     = usePassportStore()
+const query        = ref('')
+const sort         = ref('alpha')
+const visitFilter  = ref(null) // null | 'unvisited' | 'visited'
+const byDistrict   = ref(false)
 
-const sortOptions = [
-  { value: 'alpha',  label: 'A–Z' },
-  { value: 'region', label: 'By area' },
-]
+// Geolocation state
+const userLat   = ref(null)
+const userLng   = ref(null)
+const geoStatus = ref('idle') // 'idle' | 'loading' | 'ready' | 'denied'
+
+function formatDistance(km) {
+  if (km < 1) return `${Math.round(km * 1000)} m`
+  return `${km.toFixed(1)} km`
+}
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function selectSort(value) {
+  if (value === 'nearby' && geoStatus.value === 'idle') {
+    if (!navigator?.geolocation) {
+      geoStatus.value = 'denied'
+      return
+    }
+    geoStatus.value = 'loading'
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat.value = pos.coords.latitude
+        userLng.value = pos.coords.longitude
+        geoStatus.value = 'ready'
+        sort.value = 'nearby'
+      },
+      () => {
+        geoStatus.value = 'denied'
+        sort.value = 'alpha'
+      }
+    )
+    return
+  }
+  sort.value = value
+}
+
+function sortedList(list) {
+  if (sort.value === 'nearby' && userLat.value !== null) {
+    return [...list].sort((a, b) =>
+      haversineKm(userLat.value, userLng.value, a.Lat, a.Long) -
+      haversineKm(userLat.value, userLng.value, b.Lat, b.Long)
+    )
+  }
+  return [...list].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
+}
 
 const filteredBranches = computed(() => {
   let list = physicalBranches
@@ -80,13 +150,18 @@ const filteredBranches = computed(() => {
       b.Address?.toLowerCase().includes(q)
     )
   }
-  if (onlyUnvisited.value) {
-    list = list.filter(b => !passport.hasVisited(b.BranchCode))
+  if (visitFilter.value === 'unvisited') list = list.filter(b => !passport.hasVisited(b.BranchCode))
+  if (visitFilter.value === 'visited')   list = list.filter(b => passport.hasVisited(b.BranchCode))
+  return sortedList(list)
+})
+
+const distanceMap = computed(() => {
+  if (sort.value !== 'nearby' || userLat.value === null) return {}
+  const map = {}
+  for (const b of physicalBranches) {
+    map[b.BranchCode] = formatDistance(haversineKm(userLat.value, userLng.value, b.Lat, b.Long))
   }
-  if (sort.value === 'alpha') {
-    return [...list].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
-  }
-  return list
+  return map
 })
 
 const byRegion = computed(() => {
@@ -95,11 +170,11 @@ const byRegion = computed(() => {
   for (const b of filteredBranches.value) {
     if (b.District) map[b.District]?.push(b)
   }
-  for (const d of DISTRICT_ORDER) map[d].sort((a, b) => a.BranchName.localeCompare(b.BranchName))
+  // filteredBranches is already sorted — preserve that order within groups
   return map
 })
 
-const visibleRegions = computed(() =>
+const visibleDistricts = computed(() =>
   DISTRICT_ORDER.filter(d => byRegion.value[d]?.length > 0)
 )
 </script>
@@ -154,13 +229,30 @@ const visibleRegions = computed(() =>
 
 .search-input:focus { border-color: var(--tpl-blue); }
 
-.sort-tabs {
+.pill-bar {
   display: flex;
-  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  align-items: center;
+  /* extend to page edges so pills scroll under the gutter */
+  margin: 0 -16px;
+  padding: 2px 16px;
+  scrollbar-width: none;
+}
+
+.pill-bar::-webkit-scrollbar { display: none; }
+
+.pill-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border);
+  flex-shrink: 0;
 }
 
 .sort-tab {
-  padding: 7px 16px;
+  flex-shrink: 0;
+  padding: 6px 13px;
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
@@ -176,6 +268,26 @@ const visibleRegions = computed(() =>
   background: var(--tpl-navy);
   border-color: var(--tpl-navy);
   color: #fff;
+}
+
+.geo-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.geo-error {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 2px 0 0;
 }
 
 .region-group { margin-bottom: 24px; }

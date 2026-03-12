@@ -21,13 +21,14 @@ import { usePassportStore } from '~/stores/passport'
 import { getDistrictColor } from '~/composables/useRegion'
 
 const props = defineProps({
-  branch: { type: Object, required: true },
+  branch:   { type: Object, required: true },
+  distance: { type: String, default: null },
 })
 
 const passport = usePassportStore()
 
 const visited  = computed(() => passport.hasVisited(props.branch.BranchCode))
-const region   = computed(() => props.branch.District ?? '')
+const region   = computed(() => props.distance ?? props.branch.District ?? '')
 const dotStyle = computed(() => ({
   background: visited.value
     ? getDistrictColor(props.branch.District)
