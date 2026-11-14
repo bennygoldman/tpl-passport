@@ -45,9 +45,15 @@ watch(active, (isActive) => {
 async function start() {
   await nextTick()
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
+    const media = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment' },
     })
+    // Closed while the permission prompt was open: release the camera.
+    if (!active.value || !videoEl.value) {
+      media.getTracks().forEach(t => t.stop())
+      return
+    }
+    stream = media
     videoEl.value.srcObject = stream
     await videoEl.value.play()
     // Set canvas dimensions once — videoWidth/Height are fixed for a given camera stream
@@ -56,6 +62,8 @@ async function start() {
     ctx = scanCanvas.value.getContext('2d')
     rafId = requestAnimationFrame(scanLoop)
   } catch {
+    if (!active.value) return
+    stop()
     emit('error', 'Camera access denied — check your browser settings.')
     active.value = false
   }
