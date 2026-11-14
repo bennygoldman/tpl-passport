@@ -245,7 +245,7 @@ async function onVisitPhotoCapture(event, timestamp) {
   font-weight: 700;
   font-family: var(--font-body);
   background: var(--tpl-blue);
-  color: #fff;
+  color: var(--color-text-inverse);
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;

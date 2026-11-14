@@ -267,7 +267,7 @@ const nearbyBranches = computed(() => {
   width: 100%;
   padding: 16px;
   background: var(--tpl-blue);
-  color: white;
+  color: var(--color-text-inverse);
   border: none;
   border-radius: var(--radius);
   font-size: 1rem;
@@ -380,7 +380,7 @@ const nearbyBranches = computed(() => {
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--tpl-navy);
+  color: var(--color-brand-text);
   font-optical-sizing: auto;
 }
 

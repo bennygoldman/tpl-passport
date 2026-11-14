@@ -336,7 +336,7 @@ onUnmounted(() => {
   width: 100%;
   padding: 16px;
   background: var(--tpl-blue);
-  color: white;
+  color: var(--color-text-inverse);
   border: none;
   border-radius: var(--radius);
   font-size: 1rem;
@@ -347,13 +347,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--tpl-blue) 32%, transparent);
+  box-shadow: var(--shadow-accent);
 
-  @media (prefers-color-scheme: dark) {
-    & {
-      box-shadow: none;
-    }
-  }
 
   transition: background 0.15s,
   transform 0.1s;
@@ -462,7 +457,7 @@ onUnmounted(() => {
   width: 100%;
   padding: 16px;
   background: var(--tpl-blue);
-  color: white;
+  color: var(--color-text-inverse);
   border: none;
   border-radius: var(--radius);
   font-size: 1rem;
@@ -470,13 +465,8 @@ onUnmounted(() => {
   font-family: var(--font-body);
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--tpl-blue) 32%, transparent);
+  box-shadow: var(--shadow-accent);
 
-  @media (prefers-color-scheme: dark) {
-    & {
-      box-shadow: none;
-    }
-  }
 
   &:disabled {
     background: var(--color-text-muted);
@@ -551,8 +541,4 @@ onUnmounted(() => {
 }
 
 
-:global([data-theme="dark"]) .qr-btn-primary,
-:global([data-theme="dark"]) .checkin-btn {
-  box-shadow: none;
-}
 </style>

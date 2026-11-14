@@ -259,15 +259,11 @@ function openBranchSheet(branch) {
 
 .tab-pill {
   &.active {
-    color: var(--tpl-navy);
-    border-bottom-color: var(--tpl-navy);
+    color: var(--color-brand-text);
+    border-bottom-color: var(--color-brand-text);
   }
 }
 
-:global([data-theme="dark"]) .tab-pill.active {
-  color: var(--color-brand-text);
-  border-bottom-color: var(--color-brand-text);
-}
 
 /* ── Near Me ─────────────────────────────────────────────────────── */
 .geo-state {

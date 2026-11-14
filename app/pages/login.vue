@@ -210,7 +210,7 @@ async function signInWithGoogle() {
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--tpl-navy);
+  color: var(--color-brand-text);
   letter-spacing: -0.02em;
   font-optical-sizing: auto;
 }
@@ -352,7 +352,7 @@ async function signInWithGoogle() {
   font-size: 1rem;
   font-weight: 700;
   font-family: var(--font-body);
-  color: #fff;
+  color: var(--color-text-inverse);
   background: var(--tpl-blue);
   border: none;
   border-radius: var(--radius-sm);

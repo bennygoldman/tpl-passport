@@ -323,12 +323,9 @@ onMounted(() => {
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.1;
-  color: var(--tpl-navy);
-}
-
-:global([data-theme="dark"]) .event-day {
   color: var(--color-brand-text);
 }
+
 
 .event-weekday {
   font-size: 0.5625rem;

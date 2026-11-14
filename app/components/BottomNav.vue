@@ -126,19 +126,11 @@ const contextualTab = computed(() => {
   justify-content: center;
   margin-bottom: 2px;
   margin-top: -8px;
-  box-shadow: 0 4px 12px rgba(0, 95, 192, 0.45);
+  box-shadow: var(--shadow-accent-strong);
   transition: transform 0.15s ease, background 0.15s;
 
-  @media (prefers-color-scheme: dark) {
-    & {
-      box-shadow: none;
-    }
-  }
 }
 
-:global([data-theme="dark"]) .checkin-orb {
-  box-shadow: none;
-}
 
 .nav-icon {
   width: 22px;

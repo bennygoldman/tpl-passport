@@ -191,12 +191,12 @@ const mrzLine2 = computed(() => {
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-md);
-  border-left: 1px solid var(--tpl-blue);
-  border-right: 1px solid var(--tpl-blue);
+  border-left: 1px solid var(--color-band);
+  border-right: 1px solid var(--color-band);
 }
 
 .card-top {
-  background: var(--tpl-blue);
+  background: var(--color-band);
   padding: 12px 18px 10px;
 }
 
@@ -378,7 +378,7 @@ const mrzLine2 = computed(() => {
 }
 
 .mrz {
-  background: var(--tpl-blue);
+  background: var(--color-band);
   padding: 8px 18px 10px;
   display: flex;
   align-items: center;

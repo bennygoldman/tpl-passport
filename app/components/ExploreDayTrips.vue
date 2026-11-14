@@ -128,22 +128,12 @@ const routesWithProgress = computed(() =>
 
 .mode-tab {
   &.active {
-    color: var(--tpl-navy);
-    border-bottom-color: var(--tpl-navy);
+    color: var(--color-brand-text);
+    border-bottom-color: var(--color-brand-text);
 
-    @media (prefers-color-scheme: dark) {
-      & {
-        color: var(--color-brand-text);
-        border-bottom-color: var(--color-brand-text);
-      }
-    }
   }
 }
 
-:global([data-theme="dark"]) .mode-tab.active {
-  color: var(--color-brand-text);
-  border-bottom-color: var(--color-brand-text);
-}
 
 .mode-icon {
   width: 20px;
@@ -190,8 +180,8 @@ const routesWithProgress = computed(() =>
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--tpl-navy);
-  background: color-mix(in srgb, var(--tpl-navy) 8%, transparent);
+  color: var(--color-brand-text);
+  background: color-mix(in srgb, var(--color-brand-text) 8%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   flex-shrink: 0;

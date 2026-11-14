@@ -235,6 +235,14 @@ function onAppInstalled() {
 // Profile editing
 const profileName = ref(passport.profile.name ?? '')
 const profileHomeBranch = ref(passport.profile.homeBranch ?? '')
+
+// The account sync in app.vue can finish after this page mounts (e.g. when
+// opening /settings directly). Keep the read-only view in step with the store.
+watch(() => [passport.profile.name, passport.profile.homeBranch], ([name, homeBranch]) => {
+  if (profileEditing.value) return
+  profileName.value = name ?? ''
+  profileHomeBranch.value = homeBranch ?? ''
+})
 const profileSaving = ref(false)
 
 function showToast(text, kind = 'success') {

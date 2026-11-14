@@ -244,7 +244,7 @@ async function submitChangePassword() {
   font-size: 0.875rem;
   font-weight: 600;
   font-family: var(--font-body);
-  color: #fff;
+  color: var(--color-text-inverse);
   background: var(--tpl-blue);
   border: none;
   border-radius: var(--radius-sm);

@@ -161,7 +161,10 @@ const nearbyBranches = computed(() => {
 .photo-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-width: 200px;
+  white-space: nowrap;
   padding: 10px 16px;
   border: 2px solid var(--color-border);
   border-radius: var(--radius);
@@ -171,6 +174,12 @@ const nearbyBranches = computed(() => {
   color: var(--color-text-mid);
   background: var(--color-surface);
   cursor: pointer;
+
+  & svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
 }
 
 .photo-input {
@@ -273,7 +282,10 @@ const nearbyBranches = computed(() => {
 .save-photo-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 200px;
+  white-space: nowrap;
   padding: 8px 20px;
   border: 2px solid var(--color-border);
   border-radius: var(--radius);
