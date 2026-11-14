@@ -56,6 +56,7 @@ import { sortedBranches, haversineKm } from '~/composables/useRegion'
 import { BADGES, buildBadgeCtx, useBadgeCtx } from '~/composables/useBadges'
 import { savePhoto } from '~/composables/usePhotoStore'
 import { compressPhoto, uploadCheckInPhoto } from '~/lib/checkInPhoto'
+import { canUploadPhotos, useAuthKnown, useSignedIn } from '~/composables/useAccountSync'
 import IconPhoto from '~/components/icons/IconPhoto.vue'
 import IconSave from '~/components/icons/IconSave.vue'
 import IconSuccessCheck from '~/components/icons/IconSuccessCheck.vue'
@@ -63,12 +64,11 @@ import IconSuccessCheck from '~/components/icons/IconSuccessCheck.vue'
 // result: { timestamp, branchCode, branchName, region, wardNo } | null.
 // The sheet opens when a result is set and clears it when closed.
 const result = defineModel('result', { type: Object, default: null })
-const props = defineProps({
-  signedIn: { type: Boolean, default: false },
-})
 
 const { $posthog } = useNuxtApp()
 const passport = usePassportStore()
+const signedIn = useSignedIn()
+const authKnown = useAuthKnown()
 
 const sheetHeight = 'calc(100svh - var(--nav-height) - 60px)'
 const open = ref(false)
@@ -91,7 +91,7 @@ watch(open, isOpen => {
 onUnmounted(clearPhoto)
 
 const showSignInNudge = computed(() =>
-  !props.signedIn && passport.checkIns.length === 1
+  authKnown.value && !signedIn.value && passport.checkIns.length === 1
 )
 
 async function onPhotoCapture(event) {
@@ -106,7 +106,7 @@ async function onPhotoCapture(event) {
   if (ts) {
     savePhoto(ts, blob)
     passport.markCheckInHasPhoto(ts)
-    if (props.signedIn) {
+    if (canUploadPhotos()) {
       void uploadCheckInPhoto(blob).then((publicUrl) => {
         if (publicUrl) passport.markCheckInHasPhoto(ts, publicUrl)
       })

@@ -26,8 +26,8 @@ import * as Sentry from '@sentry/nuxt'
 import { usePassportStore } from '~/stores/passport'
 import { BADGES, useBadgeCtx } from '~/composables/useBadges'
 import { authClient } from '~/lib/auth-client'
-import { pushProfile } from '~/composables/useProfileSync'
-import { syncAccount, useSignedIn } from '~/composables/useAccountSync'
+import { reportError } from '~/lib/reportError'
+import { syncAccount, useAuthKnown, useSignedIn } from '~/composables/useAccountSync'
 
 const { $posthog } = useNuxtApp()
 const passport = usePassportStore()
@@ -75,6 +75,7 @@ const showCover = ref(false)
 
 // Track session so the homeBranch watcher knows whether to push updates.
 const isSignedIn = useSignedIn()
+const authKnown = useAuthKnown()
 
 onMounted(async () => {
   if ('serviceWorker' in navigator) {
@@ -84,8 +85,15 @@ onMounted(async () => {
 
   // Sync auth → passport on every app load.
   // Covers: returning signed-in users, Google OAuth redirects (full page reload).
-  const { data } = await authClient.getSession()
+  // If the auth server can't be reached, carry on as signed out.
+  let data = null
+  try {
+    data = (await authClient.getSession()).data
+  } catch (error) {
+    reportError(error, { area: 'auth', operation: 'get_session' })
+  }
   isSignedIn.value = !!data
+  authKnown.value = true
   const googlePendingTs = sessionStorage.getItem('google_signin_pending')
   if (googlePendingTs) sessionStorage.removeItem('google_signin_pending')
   if (data) {
@@ -102,11 +110,8 @@ onMounted(async () => {
   homeBranchReady.value = true
 })
 
-// Sync homeBranch → user_profile whenever it changes while signed in.
-watch(() => passport.profile.homeBranch, async (branch) => {
-  if (!isSignedIn.value) return
-  pushProfile({ name: passport.profile.name, homeBranch: branch || null })
-})
+// homeBranch is pushed by whoever changes it while signed in (Settings and
+// syncAccount); the passport card only lets signed-out users edit it.
 </script>
 
 <style>

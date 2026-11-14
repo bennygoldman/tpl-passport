@@ -94,7 +94,7 @@
   </main>
 
   <!-- ── Check-in success sheet ───── -->
-  <CheckInSuccessSheet v-model:result="result" :signed-in="isSignedIn" />
+  <CheckInSuccessSheet v-model:result="result" />
 
   <!-- ── QR Scanner overlay ────────── -->
   <QrScannerOverlay
@@ -109,11 +109,8 @@
 import { usePassportStore } from '~/stores/passport'
 import { sortedBranches, haversineKm } from '~/composables/useRegion'
 import { FEATURES } from '~/composables/useFeatureFlags'
-import { authClient } from '~/lib/auth-client'
 import IconVisited from '~/components/icons/IconVisited.vue'
 import IconQR from '~/components/icons/IconQR.vue'
-
-const isSignedIn = ref(false)
 
 function getPosition() {
   return new Promise((resolve, reject) =>
@@ -151,12 +148,8 @@ async function detectNearest() {
   }
 }
 
-onMounted(async () => {
-  const [{ data: session }] = await Promise.all([
-    authClient.getSession(),
-    (async () => { if (!prefilled) await detectNearest() })(),
-  ])
-  isSignedIn.value = !!session
+onMounted(() => {
+  if (!prefilled) void detectNearest()
 })
 
 const selectedBranch = computed(() =>

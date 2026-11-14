@@ -56,18 +56,40 @@ describe('reconcileCheckIns same-day duplicates', () => {
     expect(merged).toEqual(server)
   })
 
-  it('keeps the local note and photo when the server copy has none', () => {
+  it('moves the local note and hosted photo onto the server copy and marks it for upload', () => {
     const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: '' }]
     const local = [{
       branchCode: 'AG', timestamp: '2026-04-10T14:05:00.000Z', note: 'nice reading room',
       hasPhoto: true, photoUri: 'https://example.com/p.jpg',
     }]
 
-    const { merged } = reconcileCheckIns(server, local)
-    expect(merged).toEqual([{
+    const { merged, updated, photoMoves } = reconcileCheckIns(server, local)
+    const expected = {
       branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: 'nice reading room',
       hasPhoto: true, photoUri: 'https://example.com/p.jpg',
-    }])
+    }
+    expect(merged).toEqual([expected])
+    expect(updated).toEqual([expected])
+    expect(photoMoves).toEqual([])
+  })
+
+  it('re-keys a device-only photo from the dropped duplicate', () => {
+    const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: '' }]
+    const local = [{ branchCode: 'AG', timestamp: '2026-04-10T14:05:00.000Z', note: '', hasPhoto: true }]
+
+    const { merged, updated, photoMoves } = reconcileCheckIns(server, local)
+    expect(merged[0].hasPhoto).toBe(true)
+    expect(updated).toEqual([])
+    expect(photoMoves).toEqual([{ from: '2026-04-10T14:05:00.000Z', to: '2026-04-10T14:00:00.000Z' }])
+  })
+
+  it('leaves the server copy alone when it already has a note and photo', () => {
+    const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: 'server', hasPhoto: true, photoUri: 'https://example.com/s.jpg' }]
+    const local = [{ branchCode: 'AG', timestamp: '2026-04-10T14:05:00.000Z', note: 'local', hasPhoto: true }]
+
+    const { updated, photoMoves } = reconcileCheckIns(server, local)
+    expect(updated).toEqual([])
+    expect(photoMoves).toEqual([])
   })
 
   it('does not mutate the server input', () => {

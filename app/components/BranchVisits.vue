@@ -43,7 +43,7 @@
 import { usePassportStore } from '~/stores/passport'
 import { getPhotoUrl, savePhoto } from '~/composables/usePhotoStore'
 import { compressPhoto, uploadCheckInPhoto } from '~/lib/checkInPhoto'
-import { useSignedIn } from '~/composables/useAccountSync'
+import { canUploadPhotos } from '~/composables/useAccountSync'
 import IconNote from './icons/IconNote.vue'
 import IconPhoto from './icons/IconPhoto.vue'
 
@@ -53,7 +53,6 @@ const props = defineProps({
 })
 
 const passport = usePassportStore()
-const signedIn = useSignedIn()
 
 const pastVisitsHere = computed(() =>
   passport.checkIns.filter(c => c.branchCode === props.branchCode)
@@ -107,7 +106,7 @@ async function onVisitPhotoCapture(event, timestamp) {
   if (oldUrl) URL.revokeObjectURL(oldUrl)
   photoUrls.value[timestamp] = URL.createObjectURL(blob)
   passport.markCheckInHasPhoto(timestamp)
-  if (signedIn.value) {
+  if (canUploadPhotos()) {
     const publicUrl = await uploadCheckInPhoto(blob)
     if (publicUrl) passport.markCheckInHasPhoto(timestamp, publicUrl)
   }
