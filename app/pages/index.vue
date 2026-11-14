@@ -39,17 +39,20 @@ function openBranchSheet(branch) {
       <p class="top-bar-wordmark">passport<span>:</span></p>
     </div>
 
-    <InstallHelperCard class="home-install-helper" />
+    <PassportCard class="home-passport" />
 
-    <div v-if="showBanner" class="signin-banner">
-      <div class="signin-banner__body">
-        <p class="signin-banner__text">Save your progress — access your passport on any device</p>
-        <NuxtLink to="/login" class="signin-banner__link">Sign in →</NuxtLink>
+    <!-- Prompts sit below the passport so first-time users see their passport first -->
+    <div class="home-prompts">
+      <div v-if="showBanner" class="signin-banner">
+        <div class="signin-banner__body">
+          <p class="signin-banner__text">Save your progress — access your passport on any device</p>
+          <NuxtLink to="/login" class="signin-banner__link">Sign in →</NuxtLink>
+        </div>
+        <button class="signin-banner__dismiss" aria-label="Dismiss" @click="dismissBanner">✕</button>
       </div>
-      <button class="signin-banner__dismiss" aria-label="Dismiss" @click="dismissBanner">✕</button>
+      <InstallHelperCard />
     </div>
 
-    <PassportCard />
     <RecentVisits @select="openBranchSheet" />
 
     <HomeBadgesStrip />
@@ -112,11 +115,20 @@ main {
   background: color-mix(in srgb, var(--tpl-blue) 8%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--tpl-blue) 22%, transparent);
   border-radius: var(--radius);
+}
+
+.home-passport {
   margin-top: -8px;
 }
 
-.home-install-helper {
-  margin-top: -8px;
+.home-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .signin-banner__body {
