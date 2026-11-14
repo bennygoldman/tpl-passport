@@ -1,20 +1,20 @@
 <script setup>
-import { authClient } from '~/lib/auth-client'
+import { useAuthKnown, useSignedIn } from '~/composables/useAccountSync'
 import { usePassportStore } from '~/stores/passport'
 
 const passport = usePassportStore()
 
-const isSignedIn = ref(false)
+const isSignedIn = useSignedIn()
+const authKnown = useAuthKnown()
 const bannerDismissed = ref(false)
 
-onMounted(async () => {
+onMounted(() => {
   bannerDismissed.value = localStorage.getItem('signin_banner_dismissed') === '1'
-  const { data } = await authClient.getSession()
-  isSignedIn.value = !!data
 })
 
+// Wait until app.vue has checked the session so signed-in users never see it flash.
 const showBanner = computed(() =>
-  !isSignedIn.value && passport.checkIns.length > 0 && !bannerDismissed.value
+  authKnown.value && !isSignedIn.value && passport.checkIns.length > 0 && !bannerDismissed.value
 )
 
 const branchSheetOpen = ref(false)

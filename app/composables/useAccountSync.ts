@@ -6,14 +6,68 @@ import * as Sentry from '@sentry/nuxt'
 import { usePassportStore } from '~/stores/passport'
 import { fetchCheckIns, pushCheckIn } from '~/composables/useCheckInSync'
 import { fetchProfile, pushProfile } from '~/composables/useProfileSync'
-import { clearPhotos } from '~/composables/usePhotoStore'
+import { clearPhotos, getPhotoBlob, movePhoto } from '~/composables/usePhotoStore'
 import { authClient } from '~/lib/auth-client'
+import { uploadCheckInPhoto } from '~/lib/checkInPhoto'
 import { reportError } from '~/lib/reportError'
 import { reconcileCheckIns } from '~/lib/checkInSyncMerge'
 import { reconcileProfile } from '~/lib/profileSyncMerge'
 
+// Whether the user is signed in. Only meaningful once useAuthKnown() is true;
+// app.vue sets both after its getSession() call on load.
 export function useSignedIn() {
   return useState<boolean>('auth:signedIn', () => false)
+}
+
+export function useAuthKnown() {
+  return useState<boolean>('auth:known', () => false)
+}
+
+// Upload photos unless we know the user is signed out. Before the session
+// check finishes we try anyway: a signed-out upload just gets a 401.
+export function canUploadPhotos(): boolean {
+  return useSignedIn().value || !useAuthKnown().value
+}
+
+// Make sure everything on this device is on the server: merge with the server
+// list, push local-only and merged records, and upload photos that only exist
+// in IndexedDB. Resolves to true only if every step succeeded.
+async function flushToServer(): Promise<boolean> {
+  const passport = usePassportStore()
+
+  const serverCheckIns = await fetchCheckIns()
+  if (!serverCheckIns) return false
+
+  const { merged, localOnly, updated, photoMoves } = reconcileCheckIns(serverCheckIns, passport.checkIns)
+  passport.setCheckIns(merged)
+
+  let ok = true
+  for (const { from, to } of photoMoves) {
+    try {
+      await movePhoto(from, to)
+    } catch (error) {
+      ok = false
+      reportError(error, { area: 'persistence', operation: 'move_photo' })
+    }
+  }
+
+  const pushes = await Promise.all([...localOnly, ...updated].map(ci => pushCheckIn(ci)))
+  if (pushes.includes(false)) ok = false
+
+  // Photos saved on this device that never got a hosted copy.
+  for (const ci of passport.checkIns.filter(c => c.hasPhoto && !c.photoUri)) {
+    try {
+      const blob = await getPhotoBlob(ci.timestamp)
+      if (!blob) continue
+      const publicUrl = await uploadCheckInPhoto(blob)
+      if (!publicUrl || !(await passport.markCheckInHasPhoto(ci.timestamp, publicUrl))) ok = false
+    } catch (error) {
+      ok = false
+      reportError(error, { area: 'sync', operation: 'upload_pending_photo' })
+    }
+  }
+
+  return ok
 }
 
 // Pull the server profile and check-ins into the local store and push up
@@ -35,27 +89,34 @@ export async function syncAccount(fallbackName = '') {
   }
 
   try {
-    const serverCheckIns = await fetchCheckIns()
-    const { merged, localOnly } = reconcileCheckIns(serverCheckIns, passport.checkIns)
-    passport.setCheckIns(merged)
-    for (const ci of localOnly) void pushCheckIn(ci)
+    await flushToServer()
   } catch (error) {
     reportError(error, { area: 'sync', operation: 'checkin_merge' })
   }
 }
 
+export type SignOutResult = { ok: true } | { ok: false, reason: string }
+
 // Sign out and wipe this device's copy of the account's data so it can't be
-// merged into the next account that signs in here. The data stays on the server.
-export async function signOutAndClear() {
+// merged into the next account that signs in here. Nothing is wiped unless
+// everything on the device is confirmed on the server and sign-out succeeded.
+export async function signOutAndClear(): Promise<SignOutResult> {
   const signedIn = useSignedIn()
   const passport = usePassportStore()
-  // The PostHog plugin is plain JS (provides null in dev), so type it here.
   const { $posthog } = useNuxtApp() as unknown as {
     $posthog: { capture: (event: string) => void, reset: () => void } | null
   }
 
-  await authClient.signOut()
-  // Flip the flag before clearing so sync watchers don't push the cleared profile.
+  if (!(await flushToServer())) {
+    return { ok: false, reason: "Some check-ins or photos haven't synced yet. Check your connection and try again." }
+  }
+
+  const { error } = await authClient.signOut()
+  if (error) {
+    reportError(new Error(`signOut failed: ${error.message ?? error.status}`), { area: 'auth', operation: 'sign_out' })
+    return { ok: false, reason: "Couldn't sign out. Please try again." }
+  }
+
   signedIn.value = false
   passport.clearLocalData()
   try {
@@ -67,4 +128,5 @@ export async function signOutAndClear() {
   $posthog?.capture('signed_out')
   $posthog?.reset()
   Sentry.setUser(null)
+  return { ok: true }
 }

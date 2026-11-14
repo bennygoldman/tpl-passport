@@ -89,7 +89,7 @@
 import { usePassportStore } from '~/stores/passport'
 import { storeToRefs } from 'pinia'
 import { physicalBranches } from '~/composables/useRegion'
-import { authClient } from '~/lib/auth-client'
+import { useSignedIn } from '~/composables/useAccountSync'
 
 // boring-avatars beam algorithm (inlined — package utilities not exported at runtime)
 function _hash(name) {
@@ -153,11 +153,7 @@ function getBeamData(name) {
 
 const passport = usePassportStore()
 
-const isSignedIn = ref(false)
-onMounted(async () => {
-  const { data } = await authClient.getSession()
-  isSignedIn.value = !!data
-})
+const isSignedIn = useSignedIn()
 const { progressPct, overallPct } = storeToRefs(passport)
 
 const totalBranches = physicalBranches.length

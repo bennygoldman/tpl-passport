@@ -65,7 +65,9 @@
 
           <div class="setting-row">
             <div>
-              <button class="signout-btn" @click="signOut">Sign out</button>
+              <button class="signout-btn" :disabled="signingOut" @click="signOut">
+                {{ signingOut ? 'Syncing…' : 'Sign out' }}
+              </button>
               <p class="setting-hint">Your passport stays in your account and is removed from this device.</p>
             </div>
           </div>
@@ -304,8 +306,19 @@ function cancelProfileEdit() {
   profileEditing.value = false
 }
 
+const signingOut = ref(false)
+
 async function signOut() {
-  await signOutAndClear()
+  signingOut.value = true
+  try {
+    const result = await signOutAndClear()
+    if (!result.ok) {
+      showToast(result.reason, 'error')
+      return
+    }
+  } finally {
+    signingOut.value = false
+  }
   session.value = null
   profileName.value = ''
   profileHomeBranch.value = ''

@@ -138,6 +138,8 @@ async function submitEmail() {
       signedIn.value = true
       if (!passport.profile.name && name.value) passport.profile.name = name.value
       await pushProfile({ name: name.value, homeBranch: null })
+      // Upload anything recorded before the account existed.
+      await syncAccount(name.value)
       Sentry.setUser({ id: signUpData.user.id })
       $posthog?.capture('sign_up_completed', { method: 'email', name_set: !!name.value })
     }

@@ -14,9 +14,12 @@ function branchDayKey(checkIn: PassportCheckIn): string {
 // - Server wins when both have the same timestamp.
 // - A local-only check-in for a branch + day the server already has (e.g. the
 //   same visit recorded on two devices) is dropped rather than pushed, matching
-//   the one-stamp-per-branch-per-day rule in the store. Its note/photo are kept
-//   on the server record if the server copy has none.
-// - Remaining local-only records are returned so the caller can push them up.
+//   the one-stamp-per-branch-per-day rule in the store. If the server copy has
+//   no note or photo, the local one's are moved onto it:
+//   - the record is returned in `updated` so the caller pushes it back up;
+//   - a photo that only exists on this device (stored under the dropped
+//     record's timestamp) is listed in `photoMoves` so the caller can re-key it.
+// - Remaining local-only records are returned in `localOnly` to be pushed.
 export function reconcileCheckIns(
   serverCheckIns: PassportCheckIn[],
   localCheckIns: PassportCheckIn[],
@@ -30,22 +33,33 @@ export function reconcileCheckIns(
   })
 
   const localOnly: PassportCheckIn[] = []
+  const updated = new Set<PassportCheckIn>()
+  const photoMoves: { from: string, to: string }[] = []
+
   for (const local of localCheckIns) {
     if (serverTimestamps.has(local.timestamp)) continue
     const sameDay = serverByDay.get(branchDayKey(local))
-    if (sameDay) {
-      if (!sameDay.note?.trim() && local.note?.trim()) sameDay.note = local.note
-      if (!sameDay.hasPhoto && local.hasPhoto) {
-        sameDay.hasPhoto = true
-        if (local.photoUri) sameDay.photoUri = local.photoUri
-      }
+    if (!sameDay) {
+      localOnly.push(local)
       continue
     }
-    localOnly.push(local)
+    if (!sameDay.note?.trim() && local.note?.trim()) {
+      sameDay.note = local.note
+      updated.add(sameDay)
+    }
+    if (!sameDay.hasPhoto && local.hasPhoto) {
+      sameDay.hasPhoto = true
+      if (local.photoUri) {
+        sameDay.photoUri = local.photoUri
+        updated.add(sameDay)
+      } else {
+        photoMoves.push({ from: local.timestamp, to: sameDay.timestamp })
+      }
+    }
   }
 
   const merged = [...mergedServer, ...localOnly]
     .sort((a, b) => timestampMs(b.timestamp) - timestampMs(a.timestamp))
 
-  return { merged, localOnly }
+  return { merged, localOnly, updated: [...updated], photoMoves }
 }

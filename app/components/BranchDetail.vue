@@ -137,7 +137,7 @@ import { getPhotoUrl, savePhoto } from '~/composables/usePhotoStore'
 import { physicalBranches, haversineKm, formatDist } from '~/composables/useRegion'
 import { compassPoints } from '~/composables/useBadges'
 import { compressPhoto, uploadCheckInPhoto } from '~/lib/checkInPhoto'
-import { useSignedIn } from '~/composables/useAccountSync'
+import { canUploadPhotos } from '~/composables/useAccountSync'
 import { formatAudiences, formatEventTime } from '~/composables/useEvents'
 import IconParking from './icons/IconParking.vue'
 import IconTelephone from './icons/IconTelephone.vue'
@@ -154,7 +154,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['open-branch'])
 const passport = usePassportStore()
-const signedIn = useSignedIn()
 const { $posthog } = useNuxtApp()
 
 onMounted(() => {
@@ -292,7 +291,7 @@ async function onVisitPhotoCapture(event, timestamp) {
   if (oldUrl) URL.revokeObjectURL(oldUrl)
   photoUrls.value[timestamp] = URL.createObjectURL(blob)
   passport.markCheckInHasPhoto(timestamp)
-  if (signedIn.value) {
+  if (canUploadPhotos()) {
     const publicUrl = await uploadCheckInPhoto(blob)
     if (publicUrl) passport.markCheckInHasPhoto(timestamp, publicUrl)
   }

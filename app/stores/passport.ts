@@ -102,16 +102,16 @@ export const usePassportStore = defineStore('passport', () => {
 
   // Sets hasPhoto: true on the check-in matching the given timestamp.
   // Called after a photo is successfully saved to IndexedDB.
-  // Pass photoUri (a hosted URL) to also sync the photo to the server.
-  function markCheckInHasPhoto(timestamp: string, photoUri: string | null = null) {
+  // Pass photoUri (a hosted URL) to also sync the photo to the server; the
+  // returned promise resolves to whether the server accepted it. Callers that
+  // don't need the result can ignore it.
+  function markCheckInHasPhoto(timestamp: string, photoUri: string | null = null): Promise<boolean> {
     const ci = checkIns.value.find(c => c.timestamp === timestamp)
-    if (ci) {
-      ci.hasPhoto = true
-      if (photoUri) {
-        ci.photoUri = photoUri
-        void patchCheckInPhoto(timestamp, photoUri)  // fire-and-forget
-      }
-    }
+    if (!ci) return Promise.resolve(false)
+    ci.hasPhoto = true
+    if (!photoUri) return Promise.resolve(true)
+    ci.photoUri = photoUri
+    return patchCheckInPhoto(timestamp, photoUri)
   }
 
   // Bulk-replace check-ins (used after server sync on sign-in).

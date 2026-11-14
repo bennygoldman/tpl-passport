@@ -196,7 +196,7 @@ import { BADGES, buildBadgeCtx, useBadgeCtx } from '~/composables/useBadges'
 import { savePhoto } from '~/composables/usePhotoStore'
 import { compressPhoto, uploadCheckInPhoto } from '~/lib/checkInPhoto'
 import { FEATURES } from '~/composables/useFeatureFlags'
-import { authClient } from '~/lib/auth-client'
+import { canUploadPhotos, useAuthKnown, useSignedIn } from '~/composables/useAccountSync'
 import IconPhoto from '~/components/icons/IconPhoto.vue'
 import IconVisited from '~/components/icons/IconVisited.vue'
 import IconQR from '~/components/icons/IconQR.vue'
@@ -204,7 +204,8 @@ import IconSave from '~/components/icons/IconSave.vue'
 import IconSuccessCheck from '~/components/icons/IconSuccessCheck.vue'
 import IconClose from '~/components/icons/IconClose.vue'
 
-const isSignedIn = ref(false)
+const isSignedIn = useSignedIn()
+const authKnown = useAuthKnown()
 
 function getPosition() {
   return new Promise((resolve, reject) =>
@@ -244,16 +245,12 @@ async function detectNearest() {
   }
 }
 
-onMounted(async () => {
-  const [{ data: session }] = await Promise.all([
-    authClient.getSession(),
-    (async () => { if (!prefilled) await detectNearest() })(),
-  ])
-  isSignedIn.value = !!session
+onMounted(() => {
+  if (!prefilled) void detectNearest()
 })
 
 const showSignInNudge = computed(() =>
-  !isSignedIn.value && passport.checkIns.length === 1
+  authKnown.value && !isSignedIn.value && passport.checkIns.length === 1
 )
 
 
@@ -286,7 +283,7 @@ async function onSuccessPhotoCapture(event) {
   if (ts) {
     savePhoto(ts, blob)
     passport.markCheckInHasPhoto(ts)
-    if (isSignedIn.value) {
+    if (canUploadPhotos()) {
       void uploadCheckInPhoto(blob).then((publicUrl) => {
         if (publicUrl) passport.markCheckInHasPhoto(ts, publicUrl)
       })
