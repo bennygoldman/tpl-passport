@@ -12,8 +12,9 @@ const isBranchDetail = computed(() => route.path.startsWith('/branch/'))
 
 const contextualTab = computed(() => {
   if (!isBranchDetail.value) return null
-  const back = router.options.history.state?.back ?? ''
-  const original = router.options.history.state?.originalSource
+  const state = router.options.history.state
+  const back = typeof state?.back === 'string' ? state.back : ''
+  const original = typeof state?.originalSource === 'string' ? state.originalSource : ''
   const effective = (back.startsWith('/branch/') && original) ? original : back
   if (effective.startsWith('/passport'))  return '/passport'
   if (effective.startsWith('/check-in'))  return '/check-in'

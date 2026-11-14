@@ -194,21 +194,7 @@ import { usePassportStore } from '~/stores/passport'
 import { sortedBranches, haversineKm, formatDist } from '~/composables/useRegion'
 import { BADGES, buildBadgeCtx, useBadgeCtx } from '~/composables/useBadges'
 import { savePhoto } from '~/composables/usePhotoStore'
-import { getAuthBase } from '~/lib/config'
-
-async function uploadPhoto(timestamp, blob) {
-  try {
-    const res = await fetch(`${getAuthBase()}/api/upload/photo?ext=jpg`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'image/jpeg' },
-      body: blob,
-    })
-    if (!res.ok) return
-    const { publicUrl } = await res.json()
-    if (publicUrl) passport.markCheckInHasPhoto(timestamp, publicUrl)
-  } catch { /* fire-and-forget */ }
-}
+import { compressPhoto, uploadCheckInPhoto } from '~/lib/checkInPhoto'
 import { FEATURES } from '~/composables/useFeatureFlags'
 import { authClient } from '~/lib/auth-client'
 import IconPhoto from '~/components/icons/IconPhoto.vue'
@@ -287,37 +273,24 @@ const noteText = ref('')
 const photoPreview = ref(null)  // object URL — revoked when sheet closes / photo changes
 const photoBlob = ref(null)  // compressed JPEG blob, kept for save-to-device
 
-// Resize to ≤ 1200 px wide and compress to JPEG — keeps IndexedDB small
-// and matches what we'll need for Supabase Storage uploads later.
-function compressPhoto(file, maxWidth = 1200, quality = 0.82) {
-  return new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const scale = Math.min(1, maxWidth / img.width)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(resolve, 'image/jpeg', quality)
-    }
-    img.src = url
-  })
-}
 
 async function onSuccessPhotoCapture(event) {
   const file = event.target.files?.[0]
   if (!file) return
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value)
   const blob = await compressPhoto(file)
+  if (!blob) return
   photoBlob.value = blob
   photoPreview.value = URL.createObjectURL(blob)
   const ts = result.value?.timestamp
   if (ts) {
     savePhoto(ts, blob)
     passport.markCheckInHasPhoto(ts)
-    if (isSignedIn.value) uploadPhoto(ts, blob)
+    if (isSignedIn.value) {
+      void uploadCheckInPhoto(blob).then((publicUrl) => {
+        if (publicUrl) passport.markCheckInHasPhoto(ts, publicUrl)
+      })
+    }
     $posthog?.capture('photo_taken', { branch_code: result.value.branchCode })
   }
 }

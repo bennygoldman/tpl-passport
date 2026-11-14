@@ -89,14 +89,13 @@ import * as Sentry from '@sentry/nuxt'
 import IconGoogle from '~/components/icons/IconGoogle.vue'
 import { authClient } from '~/lib/auth-client'
 import { usePassportStore } from '~/stores/passport'
-import { fetchProfile, pushProfile } from '~/composables/useProfileSync'
-import { fetchCheckIns, pushCheckIn } from '~/composables/useCheckInSync'
+import { pushProfile } from '~/composables/useProfileSync'
 import { reportError } from '~/lib/reportError'
-import { reconcileCheckIns } from '~/lib/checkInSyncMerge'
-import { reconcileProfile } from '~/lib/profileSyncMerge'
+import { syncAccount, useSignedIn } from '~/composables/useAccountSync'
 
 const { $posthog } = useNuxtApp()
 const passport = usePassportStore()
+const signedIn = useSignedIn()
 
 const mode = ref('signin')
 const name = ref(passport.profile.name ?? '')
@@ -108,31 +107,6 @@ const showConfirmPassword = ref(false)
 const error = ref('')
 const loading = ref(false)
 const googleLoading = ref(false)
-
-async function syncAfterSignIn(userName) {
-  const serverProfile = await fetchProfile()
-  const { nextName, nextHomeBranch, shouldPushHomeBranch } = reconcileProfile(
-    passport.profile,
-    serverProfile,
-    userName ?? ''
-  )
-  passport.profile.name = nextName
-  passport.profile.homeBranch = nextHomeBranch
-  if (shouldPushHomeBranch) {
-    pushProfile({ name: passport.profile.name, homeBranch: passport.profile.homeBranch })
-  }
-  try {
-    const serverCheckIns = await fetchCheckIns()
-    const { merged, localOnly } = reconcileCheckIns(serverCheckIns, passport.checkIns)
-    passport.setCheckIns(merged)
-    for (const ci of localOnly) pushCheckIn(ci)
-  } catch (error) {
-    reportError(error, {
-      area: 'sync',
-      operation: 'post_signin_checkin_merge',
-    })
-  }
-}
 
 async function submitEmail() {
   error.value = ''
@@ -149,7 +123,8 @@ async function submitEmail() {
         callbackURL: '/',
       })
       if (err) { error.value = err.message; return }
-      await syncAfterSignIn(data?.user?.name)
+      signedIn.value = true
+      await syncAccount(data?.user?.name ?? '')
       Sentry.setUser({ id: data.user.id })
       $posthog?.capture('sign_in_completed', { method: 'email' })
     } else {
@@ -160,6 +135,7 @@ async function submitEmail() {
         callbackURL: '/',
       })
       if (err) { error.value = err.message; return }
+      signedIn.value = true
       if (!passport.profile.name && name.value) passport.profile.name = name.value
       await pushProfile({ name: name.value, homeBranch: null })
       Sentry.setUser({ id: signUpData.user.id })

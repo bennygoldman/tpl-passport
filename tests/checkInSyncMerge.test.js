@@ -45,3 +45,41 @@ describe('reconcileCheckIns', () => {
     expect(localOnly).toEqual([])
   })
 })
+
+describe('reconcileCheckIns same-day duplicates', () => {
+  it('drops a local check-in for a branch and day the server already has', () => {
+    const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: '' }]
+    const local = [{ branchCode: 'AG', timestamp: '2026-04-10T14:05:00.000Z', note: '' }]
+
+    const { merged, localOnly } = reconcileCheckIns(server, local)
+    expect(localOnly).toEqual([])
+    expect(merged).toEqual(server)
+  })
+
+  it('keeps the local note and photo when the server copy has none', () => {
+    const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: '' }]
+    const local = [{
+      branchCode: 'AG', timestamp: '2026-04-10T14:05:00.000Z', note: 'nice reading room',
+      hasPhoto: true, photoUri: 'https://example.com/p.jpg',
+    }]
+
+    const { merged } = reconcileCheckIns(server, local)
+    expect(merged).toEqual([{
+      branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: 'nice reading room',
+      hasPhoto: true, photoUri: 'https://example.com/p.jpg',
+    }])
+  })
+
+  it('does not mutate the server input', () => {
+    const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: '' }]
+    reconcileCheckIns(server, [{ branchCode: 'AG', timestamp: '2026-04-10T14:05:00.000Z', note: 'x' }])
+    expect(server[0].note).toBe('')
+  })
+
+  it('keeps visits to the same branch on different days', () => {
+    const server = [{ branchCode: 'AG', timestamp: '2026-04-10T14:00:00.000Z', note: '' }]
+    const local = [{ branchCode: 'AG', timestamp: '2026-04-12T14:00:00.000Z', note: '' }]
+    const { localOnly } = reconcileCheckIns(server, local)
+    expect(localOnly).toHaveLength(1)
+  })
+})

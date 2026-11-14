@@ -119,6 +119,19 @@ export const usePassportStore = defineStore('passport', () => {
     checkIns.value = newCheckIns
   }
 
+  // Wipes this device's copy of the passport (used on sign-out). Keeps
+  // device-level preferences (theme, onboarding) and starts a fresh anonymous id.
+  function clearLocalData() {
+    checkIns.value = []
+    completedChallenges.value = []
+    profile.value = {
+      ...defaultProfile,
+      theme: profile.value.theme,
+      hasSeenOnboarding: profile.value.hasSeenOnboarding,
+    }
+    anonymousId.value = import.meta.client ? crypto.randomUUID() : ''
+  }
+
   // STASHED: challenges — restore when FEATURES.challenges = true
   // These functions and state are kept intact so re-enabling requires only a flag flip.
   function hasCompletedChallenge(branchCode: string, idx: number) {
@@ -170,6 +183,7 @@ export const usePassportStore = defineStore('passport', () => {
     updateNote,
     markCheckInHasPhoto,
     setCheckIns,
+    clearLocalData,
     loadDemoState,
   }
 })

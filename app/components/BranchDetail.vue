@@ -136,7 +136,8 @@ import { usePassportStore } from '~/stores/passport'
 import { getPhotoUrl, savePhoto } from '~/composables/usePhotoStore'
 import { physicalBranches, haversineKm, formatDist } from '~/composables/useRegion'
 import { compassPoints } from '~/composables/useBadges'
-import { getAuthBase } from '~/lib/config'
+import { compressPhoto, uploadCheckInPhoto } from '~/lib/checkInPhoto'
+import { useSignedIn } from '~/composables/useAccountSync'
 import { formatAudiences, formatEventTime } from '~/composables/useEvents'
 import IconParking from './icons/IconParking.vue'
 import IconTelephone from './icons/IconTelephone.vue'
@@ -153,6 +154,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['open-branch'])
 const passport = usePassportStore()
+const signedIn = useSignedIn()
 const { $posthog } = useNuxtApp()
 
 onMounted(() => {
@@ -279,45 +281,20 @@ function saveNote(timestamp) {
 
 // Photo adding on existing visits
 
-function compressPhoto(file, maxWidth = 1200, quality = 0.82) {
-  return new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const scale = Math.min(1, maxWidth / img.width)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(resolve, 'image/jpeg', quality)
-    }
-    img.src = url
-  })
-}
 
 async function onVisitPhotoCapture(event, timestamp) {
   const file = event.target.files?.[0]
   if (!file) return
   const blob = await compressPhoto(file)
+  if (!blob) return
   await savePhoto(timestamp, blob)
   const oldUrl = photoUrls.value[timestamp]
   if (oldUrl) URL.revokeObjectURL(oldUrl)
   photoUrls.value[timestamp] = URL.createObjectURL(blob)
-  try {
-    const res = await fetch(`${getAuthBase()}/api/upload/photo?ext=jpg`, {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'image/jpeg' },
-      body: blob,
-    })
-    if (res.ok) {
-      const { publicUrl } = await res.json()
-      if (publicUrl) passport.markCheckInHasPhoto(timestamp, publicUrl)
-    } else {
-      passport.markCheckInHasPhoto(timestamp)
-    }
-  } catch {
-    passport.markCheckInHasPhoto(timestamp)
+  passport.markCheckInHasPhoto(timestamp)
+  if (signedIn.value) {
+    const publicUrl = await uploadCheckInPhoto(blob)
+    if (publicUrl) passport.markCheckInHasPhoto(timestamp, publicUrl)
   }
 }
 

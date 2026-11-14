@@ -64,7 +64,10 @@
           <p v-else class="provider-note">Signed in with Google — email and password are managed by Google.</p>
 
           <div class="setting-row">
-            <button class="signout-btn" @click="signOut">Sign out</button>
+            <div>
+              <button class="signout-btn" @click="signOut">Sign out</button>
+              <p class="setting-hint">Your passport stays in your account and is removed from this device.</p>
+            </div>
           </div>
         </template>
         <div v-else class="setting-row">
@@ -224,12 +227,12 @@
 </template>
 
 <script setup>
-import * as Sentry from '@sentry/nuxt'
 import { usePassportStore } from '~/stores/passport'
 import { physicalBranches } from '~/composables/useRegion'
 import { authClient } from '~/lib/auth-client'
 import { pushProfile } from '~/composables/useProfileSync'
 import { isRunningStandalone } from '~/lib/installHelper'
+import { signOutAndClear } from '~/composables/useAccountSync'
 
 const { $posthog } = useNuxtApp()
 const passport = usePassportStore()
@@ -302,11 +305,11 @@ function cancelProfileEdit() {
 }
 
 async function signOut() {
-  await authClient.signOut()
-  $posthog?.capture('signed_out')
-  $posthog?.reset()
-  Sentry.setUser(null)
+  await signOutAndClear()
   session.value = null
+  profileName.value = ''
+  profileHomeBranch.value = ''
+  profileEditing.value = true
 }
 
 // Change email
